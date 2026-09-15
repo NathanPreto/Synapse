@@ -1,4 +1,4 @@
-# Mental Vendas
+# Synapse
 
 CRM de vendas com painel, mentalidade, clientes, lembretes, foco do dia e Modo Calma.
 
