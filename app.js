@@ -1,39 +1,9 @@
 const { useState, useEffect, useMemo } = React;
 /* ---------- armazenamento multiplataforma e tolerante a bloqueios ---------- */
-function getSafeStorage(type) {
- try {
-   const s = window[type];
-   if (!s) return null;
-   const probe = '__mental_vendas_probe__';
-   s.setItem(probe, '1');
-   s.removeItem(probe);
-   return s;
- } catch (e) {
-   return null;
- }
-}
-const persistentStorage = getSafeStorage('localStorage');
-const sessionStorageSafe = getSafeStorage('sessionStorage');
-const memoryStorage = Object.create(null);
-const storage = {
- async get(key) {
-   try {
-     const v = persistentStorage ? persistentStorage.getItem(key) : memoryStorage[key];
-     if (v === null || v === undefined) return null;
-     return { key, value: v };
-   } catch (e) {
-     return memoryStorage[key] === undefined ? null : { key, value: memoryStorage[key] };
-   }
- },
- async set(key, value) {
-   memoryStorage[key] = value;
-   try { if (persistentStorage) persistentStorage.setItem(key, value); } catch (e) {}
-   return { key, value };
- },
-};
-function safeSessionGet(key) { try { return sessionStorageSafe ? sessionStorageSafe.getItem(key) : null; } catch (e) { return null; } }
-function safeSessionSet(key, value) { try { if (sessionStorageSafe) sessionStorageSafe.setItem(key, value); } catch (e) {} }
-/* ---------- ícones (SVG próprios, sem dependência externa) ---------- */
+const { persistentStorage, storage, safeSessionGet, safeSessionSet } = window.SynapseStorage;
+const { client: supabaseClient, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData } = window.SynapseSupabase;
+const { sanitizeInput, sanitizeRecord } = window.SynapseSecurity;
+
 const ICONS = {
  LayoutDashboard: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
  Flame: '<path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/>',
@@ -108,13 +78,6 @@ const MOODS = [
  { v: 4, label: 'Firme', color: 'var(--mood-firme)' },
  { v: 5, label: 'Focado', color: 'var(--mood-focado)' },
 ];
-
-/* ---------- Supabase / autenticação ---------- */
-const SYNAPSE_SUPABASE_URL = window.SYNAPSE_CONFIG?.supabaseUrl || '';
-const SYNAPSE_SUPABASE_KEY = window.SYNAPSE_CONFIG?.supabaseKey || '';
-const supabaseClient = (window.supabase && SYNAPSE_SUPABASE_URL && SYNAPSE_SUPABASE_KEY)
-  ? window.supabase.createClient(SYNAPSE_SUPABASE_URL, SYNAPSE_SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })
-  : null;
 
 function passwordRules(password) {
  return {
@@ -298,11 +261,11 @@ function App() {
   if (!supabaseClient) { setAuthLoading(false); return () => {}; }
   supabaseClient.auth.getSession().then(({data, error}) => {
    if (!active) return;
-   if (error) console.error('Falha ao recuperar sessão do Synapse:', error);
+   if (error) window.SynapseLogger?.error('Falha ao recuperar sessão do Synapse.', error);
    setSession(data?.session || null);
    setAuthLoading(false);
   }).catch(error => {
-   console.error('Falha ao recuperar sessão do Synapse:', error);
+   window.SynapseLogger?.error('Falha ao recuperar sessão do Synapse.', error);
    if (active) { setSession(null); setAuthLoading(false); }
   });
   const { data: listener } = supabaseClient.auth.onAuthStateChange((event, nextSession) => {
@@ -320,43 +283,6 @@ function App() {
 }
 function AuthLoading(){ return React.createElement('main',{className:'auth-screen'},React.createElement('div',{className:'auth-card auth-card-single auth-loading'},React.createElement(AuthBrand,null),React.createElement('div',{className:'auth-copy'},'Carregando seu espaço...'))); }
 
-async function syncUserRows(table, userId, rows) {
- if (!supabaseClient || !userId) return;
- const safeRows = Array.isArray(rows) ? rows : [];
- if (!safeRows.length) return;
- const payload = safeRows.map(r => ({...r, id:String(r.id), user_id:userId}));
- const { error } = await supabaseClient.from(table).upsert(payload, { onConflict:'id' });
- if (error) throw error;
-}
-
-async function deleteCloudRow(table, userId, id) {
- if (!supabaseClient || !userId || !id) return;
- const { error } = await supabaseClient.from(table).delete().eq('user_id', userId).eq('id', String(id));
- if (error) throw error;
-}
-
-async function syncSettings(userId, settings) {
- if (!supabaseClient || !userId) return;
- const { error } = await supabaseClient.from('app_settings').upsert({ user_id:userId, id:userId, desidentification_entries:settings.entries||[], pinned_phrase:settings.pinned||null, templates:settings.templates||[], theme:settings.theme||'dark' }, { onConflict:'user_id' });
- if(error) throw error;
-}
-
-async function loadSynapseData(userId) {
- const [clients, reminders, checkins, settings] = await Promise.all([
-  supabaseClient.from('clients').select('*').eq('user_id',userId).order('created_at',{ascending:false}),
-  supabaseClient.from('reminders').select('*').eq('user_id',userId).order('due',{ascending:true}),
-  supabaseClient.from('checkins').select('*').eq('user_id',userId).order('date',{ascending:false}),
-  supabaseClient.from('app_settings').select('*').eq('user_id',userId).maybeSingle()
- ]);
- for (const result of [clients,reminders,checkins,settings]) if(result.error) throw result.error;
- return {
-  clients:(clients.data||[]).map(r=>({id:r.id,name:r.name,contact:r.contact||'',stage:r.stage||'novo',temp:r.temp||'morno',lastContact:r.last_contact||'',createdAt:r.created_at_date||'',notes:r.notes||'',lostReason:r.lost_reason||'',lostTags:r.lost_tags||[],closedAt:r.closed_at||null})),
-  reminders:(reminders.data||[]).map(r=>({id:r.id,text:r.text,due:r.due||'',clientId:r.client_id||null,done:!!r.done})),
-  checkins:(checkins.data||[]).map(r=>({id:r.id,date:r.date,mood:r.mood,identity:r.identity||'',note:r.note||'',reframe:r.reframe||'',mentalStages:r.mental_stages||{}})),
-  entries:settings.data?.desidentification_entries||[], pinned:settings.data?.pinned_phrase||null, templates:settings.data?.templates||[], theme:settings.data?.theme||null,
-  hasCloudData:!!(clients.data?.length||reminders.data?.length||checkins.data?.length||settings.data?.desidentification_entries?.length||settings.data?.templates?.length||settings.data?.pinned_phrase)
- };
-}
 function SynapseWorkspace({ user, onLogout }) {
  const [loaded, setLoaded] = useState(false);
  const [loadError, setLoadError] = useState('');
@@ -378,6 +304,15 @@ function SynapseWorkspace({ user, onLogout }) {
  const [aiQuestion, setAiQuestion] = useState('');
  const [aiAnswer, setAiAnswer] = useState('');
  const [aiBusy, setAiBusy] = useState(false);
+ const [operationBusy, setOperationBusy] = useState(false);
+ const [runtimeError, setRuntimeError] = useState('');
+ useEffect(() => {
+  const onBusy = event => setOperationBusy(!!event.detail?.busy);
+  const onError = event => { const message = event.detail?.message || 'Ocorreu um erro inesperado.'; setRuntimeError(message); setTimeout(() => setRuntimeError(''), 6500); };
+  window.addEventListener('synapse:busy', onBusy);
+  window.addEventListener('synapse:error', onError);
+  return () => { window.removeEventListener('synapse:busy', onBusy); window.removeEventListener('synapse:error', onError); };
+ }, []);
  useEffect(() => { try { if (persistentStorage) persistentStorage.setItem('mental-vendas-theme', theme); } catch (e) {} }, [theme]);
  const toggleTheme = () => setTheme(v => v === 'dark' ? 'light' : 'dark');
  useEffect(() => {
@@ -404,7 +339,7 @@ function SynapseWorkspace({ user, onLogout }) {
      }
     }
    } catch(e) {
-    console.error('Falha ao carregar Synapse:', e);
+    window.SynapseLogger?.error('Falha ao carregar Synapse.', e);
     if (active) setLoadError('Não foi possível carregar seus dados da nuvem. Seus dados não foram alterados. Verifique a conexão e tente novamente.');
     return;
    }
@@ -421,10 +356,10 @@ function SynapseWorkspace({ user, onLogout }) {
  const [localMigrationData, setLocalMigrationData] = useState(null);
  const [syncError, setSyncError] = useState('');
  const SYNC_DEBOUNCE_MS = 700;
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('clients',user.id,clients.map(c=>({id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null}))).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar clientes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[clients,loaded,user.id]);
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('reminders',user.id,reminders.map(r=>({id:r.id,text:r.text,due:r.due||null,client_id:r.clientId||null,done:!!r.done}))).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar lembretes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[reminders,loaded,user.id]);
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('checkins',user.id,checkins.map(c=>({id:c.id,date:c.date,mood:c.mood,identity:c.identity||'',note:c.note||'',reframe:c.reframe||'',mental_stages:c.mentalStages||{}}))).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar check-ins.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[checkins,loaded,user.id]);
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar configurações.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('clients',user.id,clients.map(c=>({id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar clientes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[clients,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('reminders',user.id,reminders.map(r=>({id:r.id,text:r.text,due:r.due||null,client_id:r.clientId||null,done:!!r.done}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar lembretes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[reminders,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('checkins',user.id,checkins.map(c=>({id:c.id,date:c.date,mood:c.mood,identity:c.identity||'',note:c.note||'',reframe:c.reframe||'',mental_stages:c.mentalStages||{}}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar check-ins.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[checkins,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar configurações.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
  useEffect(()=>{ if(!syncError)return; const t=setTimeout(()=>setSyncError(''),5000); return()=>clearTimeout(t); },[syncError]);
  async function migrateLocalData(){
   const data = localMigrationData;
@@ -438,7 +373,7 @@ function SynapseWorkspace({ user, onLogout }) {
     syncSettings(user.id,{entries:data.entries,pinned:data.pinned,templates:data.templates,theme})
    ]);
    setLocalMigrationData(null); setMigrationRequested(false); alert('Dados locais importados para sua conta Synapse.');
-  } catch(e){console.error(e);alert('Não foi possível concluir a importação. Verifique sua conexão e tente novamente.');}
+  } catch(e){window.SynapseLogger?.error('Falha na migração local.', e);alert('Não foi possível concluir a importação. Verifique sua conexão e tente novamente.');}
  }
  const streak = useMemo(() => {
  const dates = new Set(checkins.map(c => c.date));
@@ -479,9 +414,10 @@ function SynapseWorkspace({ user, onLogout }) {
   if (!id) return;
   if (!confirm('Excluir este autorreconhecimento do histórico? Esta ação não pode ser desfeita.')) return;
   setCheckins(prev => prev.filter(c => c.id !== id));
-  deleteCloudRow('checkins', user.id, id).catch(e => { console.error(e); setSyncError('O check-in foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
+  deleteCloudRow('checkins', user.id, id).catch(e => { window.SynapseLogger?.error('Falha ao atualizar a nuvem.', e); setSyncError('O check-in foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
  }
  function saveCheckin(mood, identity, note, reframe, mentalStages) {
+ identity=sanitizeInput(identity); note=sanitizeInput(note); reframe=sanitizeInput(reframe);
  setCheckins(prev => {
  const existing = prev.find(c => c.date === todayStr());
  const others = prev.filter(c => c.date !== todayStr());
@@ -491,16 +427,18 @@ function SynapseWorkspace({ user, onLogout }) {
  setTimeout(() => setJustSaved(false), 1800);
  }
  function addClient(name, contact) {
+ name=sanitizeInput(name,200); contact=sanitizeInput(contact,500);
  setClients(prev => [...prev, {
  id: uid(), name, contact, stage: 'novo', temp: 'morno',
  lastContact: todayStr(), createdAt: todayStr(), notes: '', lostReason: '', lostTags: [], closedAt: null,
  }]);
  }
  function updateClient(id, patch) {
+ const cleanPatch = sanitizeRecord(patch,['name','contact','notes','lostReason']);
  setClients(prev => prev.map(c => {
  if (c.id !== id)
  return c;
- const next = { ...c, ...patch };
+ const next = { ...c, ...cleanPatch };
  if (patch.stage === 'fechado' && !c.closedAt)
  next.closedAt = todayStr();
  if (patch.stage && patch.stage !== 'fechado')
@@ -513,16 +451,17 @@ function SynapseWorkspace({ user, onLogout }) {
  const label = client ? `"${client.name}"` : 'este cliente';
  if (!confirm(`Excluir ${label}? Esta ação não pode ser desfeita.`)) return;
  setClients(prev => prev.filter(c => c.id !== id));
- deleteCloudRow('clients', user.id, id).catch(e => { console.error(e); setSyncError('O cliente foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
+ deleteCloudRow('clients', user.id, id).catch(e => { window.SynapseLogger?.error('Falha ao atualizar a nuvem.', e); setSyncError('O cliente foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
  }
  function addReminder(text, due, clientId) {
+ text=sanitizeInput(text,1000);
  setReminders(prev => [...prev, { id: uid(), text, due, clientId: clientId || null, done: false }]);
  }
  function toggleReminder(id) { setReminders(prev => prev.map(r => r.id === id ? { ...r, done: !r.done } : r)); }
- function updateReminder(id, patch) { setReminders(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r)); }
+ function updateReminder(id, patch) { patch=sanitizeRecord(patch,['text']); setReminders(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r)); }
  function removeReminder(id) {
   setReminders(prev => prev.filter(r => r.id !== id));
-  deleteCloudRow('reminders', user.id, id).catch(e => { console.error(e); setSyncError('O lembrete foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
+  deleteCloudRow('reminders', user.id, id).catch(e => { window.SynapseLogger?.error('Falha ao atualizar a nuvem.', e); setSyncError('O lembrete foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
  }
  function exportBackup() {
  const payload = { checkins, clients, reminders, desidentificationEntries, pinnedPhrase, templates, exportedAt: new Date().toISOString() };
@@ -537,40 +476,34 @@ function SynapseWorkspace({ user, onLogout }) {
  URL.revokeObjectURL(url);
  }
  function importBackup(file) {
- const reader = new FileReader();
- reader.onload = (e) => {
- try {
- const data = JSON.parse(e.target.result);
- if (!confirm('Importar este backup vai substituir todos os dados atuais. Continuar?'))
- return;
- setCheckins(Array.isArray(data.checkins) ? data.checkins : []);
- setClients(Array.isArray(data.clients) ? data.clients : []);
- setReminders(Array.isArray(data.reminders) ? data.reminders : []);
- setDesidentificationEntries(Array.isArray(data.desidentificationEntries) ? data.desidentificationEntries : []);
- setPinnedPhrase(data.pinnedPhrase || null);
- setTemplates(Array.isArray(data.templates) ? data.templates : []);
- }
- catch (err) {
- alert('Arquivo inválido. Verifique se é um backup exportado por este app.');
- }
- };
- reader.readAsText(file);
+  window.SynapseFeedback?.start('Importando backup');
+  SynapseSpreadsheet.readText(file).then(raw => {
+   try {
+    const data = JSON.parse(raw);
+    if (!confirm('Importar este backup vai substituir todos os dados atuais. Continuar?')) return;
+    const clean = sanitizeInput;
+    setCheckins(Array.isArray(data.checkins) ? data.checkins.map(c=>sanitizeRecord(c,['identity','note','reframe'])) : []);
+    setClients(Array.isArray(data.clients) ? data.clients.map(c=>sanitizeRecord(c,['name','contact','notes','lostReason'])) : []);
+    setReminders(Array.isArray(data.reminders) ? data.reminders.map(r=>sanitizeRecord(r,['text'])) : []);
+    setDesidentificationEntries(Array.isArray(data.desidentificationEntries) ? data.desidentificationEntries.map(clean) : []);
+    setPinnedPhrase(data.pinnedPhrase ? sanitizeRecord(data.pinnedPhrase,['text','phrase']) : null);
+    setTemplates(Array.isArray(data.templates) ? data.templates.map(t=>sanitizeRecord(t,['title','text','category'])) : []);
+   } catch (err) {
+    window.SynapseLogger?.error('Backup inválido.', err, { fileName:file?.name });
+    alert('Arquivo inválido. Verifique se é um backup exportado pelo Synapse.');
+   }
+  }).catch(err => {
+   window.SynapseLogger?.error('Falha ao ler backup.', err, { fileName:file?.name });
+   alert(err.message || 'Não foi possível ler o backup.');
+  }).finally(() => window.SynapseFeedback?.end());
  }
  function importExcel(file) {
  if (!window.XLSX) {
   alert('A biblioteca para leitura de Excel não foi carregada. Verifique sua conexão com a internet e tente novamente.');
   return;
  }
- const reader = new FileReader();
- reader.onload = (e) => {
+ SynapseSpreadsheet.parse(file).then(({rows, headers}) => {
   try {
-   const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-   const firstSheet = workbook.SheetNames[0];
-   if (!firstSheet) throw new Error('Nenhuma planilha encontrada.');
-   const sheet = workbook.Sheets[firstSheet];
-   const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
-   if (!rows.length) { alert('A planilha está vazia. Use a primeira linha para os nomes das colunas.'); return; }
-   const headers = Object.keys(rows[0]);
    const normalize = (value) => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
    const aliases = {
     name: ['nome','cliente','nome cliente','nome do cliente','empresa','empresa cliente','lead','razao social','razao','fantasia','nome fantasia','cliente nome','customer','customer name','company','company name'],
@@ -611,11 +544,13 @@ function SynapseWorkspace({ user, onLogout }) {
    fields.forEach(field => { if (autoMap[field] && confidence[field] >= 75) return; if (autoMap[field] && used.has(autoMap[field])) autoMap[field] = ''; else if (autoMap[field]) used.add(autoMap[field]); });
    setExcelReview({ rows, headers, mappings: autoMap, confidence, fieldLabels, fileName: file.name });
   } catch (err) {
-   console.error(err);
-   alert('Não foi possível ler a planilha. Use um arquivo .xlsx, .xls ou .csv válido e mantenha a primeira linha como cabeçalho.');
+   window.SynapseLogger?.error('Falha ao preparar a planilha para importação.', err, { fileName:file?.name });
+   alert('Não foi possível interpretar a planilha. Use .xlsx, .xls ou .csv e mantenha a primeira linha como cabeçalho.');
   }
- };
- reader.readAsArrayBuffer(file);
+ }).catch(err => {
+  window.SynapseLogger?.error('Falha ao processar planilha.', err, { fileName:file?.name });
+  alert(err.message || 'Não foi possível ler a planilha.');
+ });
  }
  function completeExcelImport(review) {
   if (!review) return;
@@ -635,11 +570,11 @@ function SynapseWorkspace({ user, onLogout }) {
   const mapStage = (value) => { const v=normalize(value); if(['novo','novo lead','lead novo','new','entrada','novo cadastro'].includes(v))return'novo'; if(['contato','contato feito','contatado','contact','em contato'].includes(v))return'contato'; if(['proposta','proposta enviada','proposal','orcamento','orçamento'].includes(v))return'proposta'; if(['fechado','fechada','ganho','ganha','closed','won','venda'].includes(v))return'fechado'; if(['perdido','perdida','sem interesse','lost','cancelado','cancelada'].includes(v))return'perdido'; return'novo'; };
   const mapTemp = (value) => { const v=normalize(value); if(['quente','hot','alta','alto','high'].includes(v))return'quente'; if(['frio','cold','baixa','baixo','low'].includes(v))return'frio'; return'morno'; };
   const imported = rows.map(row => {
-   const name = String(valueOf(row,'name') || '').trim(); if (!name) return null;
-   const contact = String(valueOf(row,'contact') || '').trim();
+   const name = sanitizeInput(valueOf(row,'name'),200).trim(); if (!name) return null;
+   const contact = sanitizeInput(valueOf(row,'contact'),500).trim();
    const stage = mapStage(valueOf(row,'stage')); const temp = mapTemp(valueOf(row,'temp'));
    const lastContact = dateToISO(valueOf(row,'lastContact')) || todayStr(); const createdAt = dateToISO(valueOf(row,'createdAt')) || todayStr();
-   return { id:uid(), name, contact, stage, temp, lastContact, createdAt, notes:String(valueOf(row,'notes')||'').trim(), lostReason:String(valueOf(row,'lostReason')||'').trim(), closedAt:stage==='fechado'?(lastContact||todayStr()):null };
+   return { id:uid(), name, contact, stage, temp, lastContact, createdAt, notes:sanitizeInput(valueOf(row,'notes'),5000).trim(), lostReason:sanitizeInput(valueOf(row,'lostReason'),1000).trim(), closedAt:stage==='fechado'?(lastContact||todayStr()):null };
   }).filter(Boolean);
   if (!imported.length) { alert('Nenhum cliente válido foi encontrado. Mapeie uma coluna para Nome do cliente e tente novamente.'); return; }
   const existing=[...clients]; let added=0,updated=0;
@@ -655,8 +590,8 @@ function SynapseWorkspace({ user, onLogout }) {
    const context = `Você é o assistente do Synapse. Responda em português do Brasil, de forma prática e curta. Ajude com vendas, CRM, follow-up, mentalidade comercial e dúvidas sobre importação de Excel. Dados atuais: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', { method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':key}, body:JSON.stringify({system_instruction:{parts:[{text:context}]},contents:[{parts:[{text:aiQuestion.trim()}]}],generationConfig:{temperature:0.4,maxOutputTokens:500}}) });
    const data=await response.json(); if(!response.ok) throw new Error(data?.error?.message || 'Não foi possível consultar a IA.');
-   const text=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || 'A IA não retornou uma resposta.'; setAiAnswer(text);
-  } catch(err) { console.error(err); setAiAnswer(`Não consegui consultar a IA agora. ${err.message || 'Verifique sua chave e a conexão.'}`); }
+   const text=sanitizeInput(data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || 'A IA não retornou uma resposta.', 20000); setAiAnswer(text);
+  } catch(err) { window.SynapseLogger?.error('Falha ao consultar a IA.', err); setAiAnswer(`Não consegui consultar a IA agora. ${err.message || 'Verifique sua chave e a conexão.'}`); }
   finally { setAiBusy(false); }
  }
  if (loadError) {
@@ -683,7 +618,8 @@ function SynapseWorkspace({ user, onLogout }) {
   );
  }
  return React.createElement(Shell, { theme },
-  syncError && React.createElement('div',{className:'sync-banner error'},syncError),
+  (syncError || runtimeError) && React.createElement('div',{className:'sync-banner error'},runtimeError || syncError),
+  operationBusy && React.createElement('div',{className:'sync-banner loading'},'Processando…'),
   React.createElement('div',{className:'synapse-layout'+(sidebarOpen?' is-sidebar-open':'')},
   React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange:setSidebarOpen }),
   React.createElement('main',{className:'synapse-main'},
@@ -1105,6 +1041,8 @@ function ExcelReviewModal({ review, setReview, onImport }) {
     React.createElement('button',{onClick:()=>setReview(null),className:'p-2 rounded',style:{color:'var(--muted)'}},React.createElement(X,{size:16}))
    ),
    React.createElement('div',{className:'text-sm mb-4',style:{color:'var(--muted)'}},'Revise o mapeamento antes de importar. O sistema tenta reconhecer nomes de colunas diferentes automaticamente.'),
+   !mappings.name && React.createElement('div',{className:'auth-alert error mb-4'},'A coluna de Nome do cliente não foi reconhecida. Selecione manualmente uma coluna para continuar.'),
+   review.rows.length > 5000 && React.createElement('div',{className:'auth-alert success mb-4'},`A planilha contém ${review.rows.length.toLocaleString('pt-BR')} linhas. O processamento será feito de forma controlada para evitar travamentos.`),
    React.createElement('div',{className:'space-y-2'},
     fields.map(field=>React.createElement('div',{key:field,className:'grid grid-cols-[1fr_1.2fr] gap-3 items-center p-3 rounded',style:{background:'var(--surface2)',border:'1px solid var(--border)'}},
      React.createElement('div',null,
@@ -1301,8 +1239,8 @@ function Mental({ checkins, todayCheckin, saveCheckin, deleteCheckin, justSaved,
 function DesidentificationDiary({ entries, setEntries, pinnedPhrase, setPinnedPhrase }) {
  const [thought,setThought]=useState(''); const [fact,setFact]=useState(''); const [distance,setDistance]=useState(''); const [winner,setWinner]=useState('');
  const canSuggest=thought.trim().length>0;
- const suggest=()=>{ if(!canSuggest)return; const base=fact.trim()?`Eu posso reconhecer que "${fact.trim()}" é um fato, sem transformar isso em quem eu sou.`:`Esse pensamento é algo que estou tendo agora, não uma definição de quem eu sou.`; setWinner(base); };
- const save=()=>{if(!thought.trim()||!winner.trim())return;setEntries(prev=>[{id:uid(),date:todayStr(),thought:thought.trim(),fact:fact.trim(),distance:distance.trim(),winner:winner.trim()},...prev]);setThought('');setFact('');setDistance('');setWinner('');};
+ const suggest=()=>{ if(!canSuggest)return; const safeFact=sanitizeInput(fact.trim()); const base=safeFact?`Eu posso reconhecer que "${safeFact}" é um fato, sem transformar isso em quem eu sou.`:`Esse pensamento é algo que estou tendo agora, não uma definição de quem eu sou.`; setWinner(sanitizeInput(base)); };
+ const save=()=>{if(!thought.trim()||!winner.trim())return;setEntries(prev=>[{id:uid(),date:todayStr(),thought:sanitizeInput(thought.trim()),fact:sanitizeInput(fact.trim()),distance:sanitizeInput(distance.trim()),winner:sanitizeInput(winner.trim())},...prev]);setThought('');setFact('');setDistance('');setWinner('');};
  const history=entries.slice(0,6).map(e=>React.createElement('div',{key:e.id,className:'diary-history-item'},React.createElement('div',{className:'flex items-center justify-between gap-3'},React.createElement('span',{className:'text-xs',style:{color:'var(--muted2)'}},fmtDate(e.date)),React.createElement('button',{onClick:()=>setPinnedPhrase(pinnedPhrase?.text===e.winner?null:{text:e.winner,date:e.date}),className:'text-xs flex items-center gap-1',style:{color:'var(--teal)'}},React.createElement(Pin,{size:12}),pinnedPhrase?.text===e.winner?'Fixada':'Fixar')),React.createElement('div',{className:'text-sm mt-2',style:{color:'var(--muted)'}},e.thought),React.createElement('div',{className:'text-sm mt-2',style:{fontWeight:650}},e.winner)));
  return React.createElement(Section,{title:'Desidentificação prática',right:React.createElement('span',{className:'text-xs',style:{color:'var(--muted)'}},'Pensamento não é identidade')},
   React.createElement('div',{className:'diary-layout'},
@@ -1419,7 +1357,7 @@ function TemplatesModal({ templates, setTemplates, onClose }) {
  const [category,setCategory]=useState('frio'); const [title,setTitle]=useState(''); const [text,setText]=useState(''); const [editing,setEditing]=useState(null); const [filter,setFilter]=useState('todos');
  const all=[...DEFAULT_TEMPLATES,...templates]; const visible=all.filter(t=>filter==='todos'||t.category===filter);
  const reset=()=>{setTitle('');setText('');setEditing(null);};
- const save=()=>{if(!title.trim()||!text.trim())return;const item={id:editing||uid(),title:title.trim(),category,text:text.trim()};setTemplates(prev=>editing?prev.map(x=>x.id===editing?item:x):[...prev,item]);reset();};
+ const save=()=>{if(!title.trim()||!text.trim())return;const item={id:editing||uid(),title:sanitizeInput(title.trim(),200),category:sanitizeInput(category,40),text:sanitizeInput(text.trim(),5000)};setTemplates(prev=>editing?prev.map(x=>x.id===editing?item:x):[...prev,item]);reset();};
  const beginEdit=t=>{setEditing(t.id);setTitle(t.title);setText(t.text);setCategory(t.category);};
  return React.createElement('div',{className:'modal-backdrop'},React.createElement('div',{className:'smart-modal templates-modal'},
   React.createElement('div',{className:'modal-head'},React.createElement('div',null,React.createElement('div',{className:'text-lg',style:{fontWeight:750}},'Modelos de mensagens'),React.createElement('div',{className:'text-xs mt-1',style:{color:'var(--muted)'}},'Mensagens prontas para reduzir a fadiga de decidir o que escrever.')),React.createElement('button',{onClick:onClose,className:'icon-button'},React.createElement(X,{size:18}))),
