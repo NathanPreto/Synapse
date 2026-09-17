@@ -11,10 +11,10 @@
 <meta name="description" content="CRM de vendas + mentalidade comercial, com autenticação e persistência em nuvem." />
 <title>Synapse | Gestão comercial e mentalidade</title>
 
-<link rel="manifest" href="manifest.json?v=4" />
+<link rel="manifest" href="manifest.json?v=5" />
 <link rel="icon" href="favicon-32.png?v=4" type="image/png" sizes="32x32" />
-<link rel="icon" href="icon-192.png?v=4" type="image/png" sizes="192x192" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=4" />
+<link rel="icon" href="icon-192.png?v=5" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=5" />
 
 <style>
   #synapse-install-button {
@@ -34,6 +34,22 @@
     cursor: pointer;
   }
   #synapse-install-button.is-visible { display: block; }
+
+  /* Carregamento: usa o logo raster de 512px, sem o antigo "S" de texto.
+     O próprio ícone PWA já tem 30% de margem branca para o mobile. */
+  .cloud-load-spinner {
+    width: min(180px, 42vw) !important;
+    height: min(180px, 42vw) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff url('./icon-512.png?v=5') center center / 100% 100% no-repeat !important;
+    box-shadow: none !important;
+    font-size: 0 !important;
+    color: transparent !important;
+    animation: none !important;
+  }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" integrity="sha512-QVs8Lo43F9lSuBykadDb0oSXDL/BbZ588urWVCRwSIoewQv/Ewg1f84mK3U790bZ0FfhFa1YSQUmIhG+pIRKeg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -53,7 +69,7 @@
 <script>
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=4').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=5').catch(() => {});
     });
   }
 
