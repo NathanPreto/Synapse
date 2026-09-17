@@ -11,10 +11,10 @@
 <meta name="description" content="CRM de vendas + mentalidade comercial, com autenticação e persistência em nuvem." />
 <title>Synapse | Gestão comercial e mentalidade</title>
 
-<link rel="manifest" href="manifest.json?v=3" />
-<link rel="icon" href="favicon-32.png?v=3" type="image/png" sizes="32x32" />
-<link rel="icon" href="icon-192.png?v=3" type="image/png" sizes="192x192" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
+<link rel="manifest" href="manifest.json?v=4" />
+<link rel="icon" href="favicon-32.png?v=4" type="image/png" sizes="32x32" />
+<link rel="icon" href="icon-192.png?v=4" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=4" />
 
 <style>
   #synapse-install-button {
@@ -36,7 +36,6 @@
   #synapse-install-button.is-visible { display: block; }
 </style>
 
-<!-- Dependências externas fixadas para builds reproduzíveis. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" integrity="sha512-QVs8Lo43F9lSuBykadDb0oSXDL/BbZ588urWVCRwSIoewQv/Ewg1f84mK3U790bZ0FfhFa1YSQUmIhG+pIRKeg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" integrity="sha512-6a1107rTlA4gYpgHAqbwLAtxmWipBdJFcq8y5S/aTge3Bp+VAklABm2LO+Kg51vOWR9JMZq1Ovjl5tpluNpTeQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -54,7 +53,7 @@
 <script>
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js?v=3').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=4').catch(() => {});
     });
   }
 
