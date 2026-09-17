@@ -92,16 +92,9 @@ const TEMPS = [
  { key: 'morno', label: 'Morno', color: 'var(--temp-morno)' },
  { key: 'frio', label: 'Frio', color: 'var(--temp-frio)' },
 ];
-const todayStr = () => {
- const d = new Date();
- return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-};
-const dateKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const daysBetween = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
-const uid = () => {
- try { if (window.crypto?.randomUUID) return window.crypto.randomUUID(); } catch (e) {}
- return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-};
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const fmtDate = (d) => {
  if (!d)
  return 'Não informado';
@@ -338,18 +331,6 @@ async function syncUserRows(table, userId, rows) {
 
 async function deleteCloudRow(table, userId, id) {
  if (!supabaseClient || !userId || !id) return;
- const key = `${userId}:${table}`;
- const lane = syncLanes.get(key);
- if (lane) {
-  if (lane.timer) { clearTimeout(lane.timer); lane.timer = null; }
-  if (lane.pendingRows) {
-   lane.pendingRows = lane.pendingRows.filter(row => String(row.id) !== String(id));
-  }
-  lane.pendingUpserts?.delete(String(id));
-  if (lane.running && lane.promise) {
-   try { await lane.promise; } catch (e) {}
-  }
- }
  const { error } = await supabaseClient.from(table).delete().eq('user_id', userId).eq('id', String(id));
  if (error) throw error;
 }
@@ -360,119 +341,12 @@ async function syncSettings(userId, settings) {
  if(error) throw error;
 }
 
-/* ---------- sincronização escalável e ordenada ---------- */
-const syncLanes = new Map();
-
-function getSyncLane(key, table, userId) {
- let lane = syncLanes.get(key);
- if (!lane) {
-  lane = { table, userId, pendingRows: null, pendingUpserts: new Map(), pendingSettings: null, timer: null, running: false, promise: null, retry: 0, onError: null };
-  syncLanes.set(key, lane);
- }
- return lane;
-}
-
-function scheduleSyncLane(lane, delay = 450) {
- if (lane.timer || lane.running || navigator.onLine === false) return;
- lane.timer = setTimeout(() => { lane.timer = null; flushSyncLane(lane); }, delay);
-}
-
-async function flushSyncLane(lane) {
- if (lane.running) return lane.promise;
- const rows = lane.pendingRows;
- const upserts = Array.from(lane.pendingUpserts.values());
- const settings = lane.pendingSettings;
- if (rows === null && upserts.length === 0 && settings === null) return Promise.resolve();
-
- lane.pendingRows = null;
- lane.pendingUpserts.clear();
- lane.pendingSettings = null;
- lane.running = true;
- lane.promise = (async () => {
-  try {
-   if (navigator.onLine === false) {
-    if (rows !== null) lane.pendingRows = rows;
-    upserts.forEach(row => lane.pendingUpserts.set(String(row.id), row));
-    if (settings !== null) lane.pendingSettings = settings;
-    return;
-   }
-   if (lane.table === 'app_settings') {
-    await syncSettings(lane.userId, settings || {});
-   } else {
-    const payloadRows = rows !== null ? rows : upserts;
-    await syncUserRows(lane.table, lane.userId, payloadRows);
-   }
-   lane.retry = 0;
-  } catch (e) {
-   if (rows !== null) lane.pendingRows = rows;
-   upserts.forEach(row => lane.pendingUpserts.set(String(row.id), row));
-   if (settings !== null) lane.pendingSettings = settings;
-   lane.retry = Math.min(lane.retry + 1, 5);
-   if (lane.onError) lane.onError(e);
-  } finally {
-   lane.running = false;
-   lane.promise = null;
-   if ((lane.pendingRows !== null || lane.pendingUpserts.size || lane.pendingSettings !== null) && lane.retry < 5) {
-    const retryDelay = lane.retry ? Math.min(30000, 1500 * Math.pow(2, lane.retry - 1)) : 450;
-    scheduleSyncLane(lane, retryDelay);
-   }
-  }
- })();
- return lane.promise;
-}
-
-function queueUserRowsSync(table, userId, rows, onError) {
- if (!supabaseClient || !userId) return;
- const lane = getSyncLane(`${userId}:${table}`, table, userId);
- lane.pendingRows = Array.isArray(rows) ? rows : [];
- lane.pendingUpserts.clear();
- lane.retry = 0;
- lane.onError = onError || lane.onError;
- if (navigator.onLine === false) return;
- scheduleSyncLane(lane);
-}
-
-function queueUserRowUpsert(table, userId, row, onError) {
- if (!supabaseClient || !userId || !row?.id) return;
- const lane = getSyncLane(`${userId}:${table}`, table, userId);
- if (lane.pendingRows !== null) {
-  const next = lane.pendingRows.filter(item => String(item.id) !== String(row.id));
-  next.push(row);
-  lane.pendingRows = next;
- } else {
-  lane.pendingUpserts.set(String(row.id), row);
- }
- lane.retry = 0;
- lane.onError = onError || lane.onError;
- if (navigator.onLine === false) return;
- scheduleSyncLane(lane);
-}
-
-function queueSettingsSync(userId, settings, onError) {
- if (!supabaseClient || !userId) return;
- const lane = getSyncLane(`${userId}:app_settings`, 'app_settings', userId);
- lane.pendingSettings = settings || {};
- lane.retry = 0;
- lane.onError = onError || lane.onError;
- if (navigator.onLine === false) return;
- scheduleSyncLane(lane);
-}
-
-window.addEventListener('online', () => {
- syncLanes.forEach(lane => {
-  if (lane.pendingRows !== null || lane.pendingSettings !== null) {
-   lane.retry = 0;
-   scheduleSyncLane(lane, 120);
-  }
- });
-});
-
 async function loadSynapseData(userId) {
  const [clients, reminders, checkins, settings] = await Promise.all([
-  supabaseClient.from('clients').select('id,name,contact,stage,temp,last_contact,created_at_date,notes,lost_reason,lost_tags,closed_at').eq('user_id',userId).order('created_at',{ascending:false}),
-  supabaseClient.from('reminders').select('id,text,due,client_id,done').eq('user_id',userId).order('due',{ascending:true}),
-  supabaseClient.from('checkins').select('id,date,mood,identity,note,reframe,mental_stages').eq('user_id',userId).order('date',{ascending:false}),
-  supabaseClient.from('app_settings').select('id,user_id,desidentification_entries,pinned_phrase,templates,theme').eq('user_id',userId).maybeSingle()
+  supabaseClient.from('clients').select('*').eq('user_id',userId).order('created_at',{ascending:false}),
+  supabaseClient.from('reminders').select('*').eq('user_id',userId).order('due',{ascending:true}),
+  supabaseClient.from('checkins').select('*').eq('user_id',userId).order('date',{ascending:false}),
+  supabaseClient.from('app_settings').select('*').eq('user_id',userId).maybeSingle()
  ]);
  for (const result of [clients,reminders,checkins,settings]) if(result.error) throw result.error;
  return {
@@ -482,18 +356,6 @@ async function loadSynapseData(userId) {
   entries:settings.data?.desidentification_entries||[], pinned:settings.data?.pinned_phrase||null, templates:settings.data?.templates||[], theme:settings.data?.theme||null,
   hasCloudData:!!(clients.data?.length||reminders.data?.length||checkins.data?.length||settings.data?.desidentification_entries?.length||settings.data?.templates?.length||settings.data?.pinned_phrase)
  };
-}
-function clientToCloud(c) {
- return {id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null};
-}
-function reminderToCloud(r) {
- return {id:r.id,text:r.text,due:r.due||null,client_id:r.clientId||null,done:!!r.done};
-}
-function checkinToCloud(c) {
- return {id:c.id,date:c.date,mood:c.mood,identity:c.identity||'',note:c.note||'',reframe:c.reframe||'',mental_stages:c.mentalStages||{}};
-}
-function syncErrorHandler(setSyncError, message) {
- return e => { console.error(e); setSyncError(message); };
 }
 function SynapseWorkspace({ user, onLogout }) {
  const [loaded, setLoaded] = useState(false);
@@ -558,7 +420,10 @@ function SynapseWorkspace({ user, onLogout }) {
  const [localMigrationData, setLocalMigrationData] = useState(null);
  const [syncError, setSyncError] = useState('');
  const SYNC_DEBOUNCE_MS = 700;
-  useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ queueSettingsSync(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme},e=>{console.error(e);setSyncError('Não foi possível sincronizar configurações.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('clients',user.id,clients.map(c=>({id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null}))).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar clientes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[clients,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('reminders',user.id,reminders.map(r=>({id:r.id,text:r.text,due:r.due||null,client_id:r.clientId||null,done:!!r.done}))).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar lembretes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[reminders,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('checkins',user.id,checkins.map(c=>({id:c.id,date:c.date,mood:c.mood,identity:c.identity||'',note:c.note||'',reframe:c.reframe||'',mental_stages:c.mentalStages||{}}))).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar check-ins.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[checkins,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{console.error(e);setSyncError('Não foi possível sincronizar configurações.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
  useEffect(()=>{ if(!syncError)return; const t=setTimeout(()=>setSyncError(''),5000); return()=>clearTimeout(t); },[syncError]);
  async function migrateLocalData(){
   const data = localMigrationData;
@@ -579,7 +444,7 @@ function SynapseWorkspace({ user, onLogout }) {
  let n = 0, cur = new Date();
  if (!dates.has(todayStr()))
  cur.setDate(cur.getDate() - 1);
- while (dates.has(dateKey(cur))) {
+ while (dates.has(cur.toISOString().slice(0, 10))) {
  n++;
  cur.setDate(cur.getDate() - 1);
  }
@@ -616,30 +481,31 @@ function SynapseWorkspace({ user, onLogout }) {
   deleteCloudRow('checkins', user.id, id).catch(e => { console.error(e); setSyncError('O check-in foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
  }
  function saveCheckin(mood, identity, note, reframe, mentalStages) {
- const existing = checkins.find(c => c.date === todayStr());
- const nextCheckin = { ...(existing || {}), id: (existing && existing.id) || uid(), date: todayStr(), mood, identity, note, reframe, mentalStages: mentalStages || (existing && existing.mentalStages) || {} };
  setCheckins(prev => {
-  const others = prev.filter(c => c.date !== todayStr());
-  return [...others, nextCheckin];
+ const existing = prev.find(c => c.date === todayStr());
+ const others = prev.filter(c => c.date !== todayStr());
+ return [...others, { ...(existing || {}), id: (existing && existing.id) || uid(), date: todayStr(), mood, identity, note, reframe, mentalStages: mentalStages || (existing && existing.mentalStages) || {} }];
  });
- queueUserRowUpsert('checkins',user.id,checkinToCloud(nextCheckin),syncErrorHandler(setSyncError,'Não foi possível sincronizar check-ins.'));
  setJustSaved(true);
  setTimeout(() => setJustSaved(false), 1800);
  }
  function addClient(name, contact) {
- const client = { id: uid(), name, contact, stage: 'novo', temp: 'morno',
-  lastContact: todayStr(), createdAt: todayStr(), notes: '', lostReason: '', lostTags: [], closedAt: null };
- setClients(prev => [...prev, client]);
- queueUserRowUpsert('clients',user.id,clientToCloud(client),syncErrorHandler(setSyncError,'Não foi possível sincronizar clientes.'));
+ setClients(prev => [...prev, {
+ id: uid(), name, contact, stage: 'novo', temp: 'morno',
+ lastContact: todayStr(), createdAt: todayStr(), notes: '', lostReason: '', lostTags: [], closedAt: null,
+ }]);
  }
  function updateClient(id, patch) {
- const current = clients.find(c => c.id === id);
- if (!current) return;
- const next = { ...current, ...patch };
- if (patch.stage === 'fechado' && !current.closedAt) next.closedAt = todayStr();
- if (patch.stage && patch.stage !== 'fechado') next.closedAt = null;
- setClients(prev => prev.map(c => c.id === id ? next : c));
- queueUserRowUpsert('clients',user.id,clientToCloud(next),syncErrorHandler(setSyncError,'Não foi possível sincronizar clientes.'));
+ setClients(prev => prev.map(c => {
+ if (c.id !== id)
+ return c;
+ const next = { ...c, ...patch };
+ if (patch.stage === 'fechado' && !c.closedAt)
+ next.closedAt = todayStr();
+ if (patch.stage && patch.stage !== 'fechado')
+ next.closedAt = null;
+ return next;
+ }));
  }
  function removeClient(id) {
  const client = clients.find(c => c.id === id);
@@ -649,24 +515,10 @@ function SynapseWorkspace({ user, onLogout }) {
  deleteCloudRow('clients', user.id, id).catch(e => { console.error(e); setSyncError('O cliente foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
  }
  function addReminder(text, due, clientId) {
- const reminder = { id: uid(), text, due, clientId: clientId || null, done: false };
- setReminders(prev => [...prev, reminder]);
- queueUserRowUpsert('reminders',user.id,reminderToCloud(reminder),syncErrorHandler(setSyncError,'Não foi possível sincronizar lembretes.'));
+ setReminders(prev => [...prev, { id: uid(), text, due, clientId: clientId || null, done: false }]);
  }
- function toggleReminder(id) {
- const current = reminders.find(r => r.id === id);
- if (!current) return;
- const next = { ...current, done: !current.done };
- setReminders(prev => prev.map(r => r.id === id ? next : r));
- queueUserRowUpsert('reminders',user.id,reminderToCloud(next),syncErrorHandler(setSyncError,'Não foi possível sincronizar lembretes.'));
- }
- function updateReminder(id, patch) {
- const current = reminders.find(r => r.id === id);
- if (!current) return;
- const next = { ...current, ...patch };
- setReminders(prev => prev.map(r => r.id === id ? next : r));
- queueUserRowUpsert('reminders',user.id,reminderToCloud(next),syncErrorHandler(setSyncError,'Não foi possível sincronizar lembretes.'));
- }
+ function toggleReminder(id) { setReminders(prev => prev.map(r => r.id === id ? { ...r, done: !r.done } : r)); }
+ function updateReminder(id, patch) { setReminders(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r)); }
  function removeReminder(id) {
   setReminders(prev => prev.filter(r => r.id !== id));
   deleteCloudRow('reminders', user.id, id).catch(e => { console.error(e); setSyncError('O lembrete foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
@@ -696,15 +548,6 @@ function SynapseWorkspace({ user, onLogout }) {
  setDesidentificationEntries(Array.isArray(data.desidentificationEntries) ? data.desidentificationEntries : []);
  setPinnedPhrase(data.pinnedPhrase || null);
  setTemplates(Array.isArray(data.templates) ? data.templates : []);
- const importedCheckins = Array.isArray(data.checkins) ? data.checkins : [];
- const importedClients = Array.isArray(data.clients) ? data.clients : [];
- const importedReminders = Array.isArray(data.reminders) ? data.reminders : [];
- const importedEntries = Array.isArray(data.desidentificationEntries) ? data.desidentificationEntries : [];
- const importedTemplates = Array.isArray(data.templates) ? data.templates : [];
- queueUserRowsSync('checkins',user.id,importedCheckins.map(checkinToCloud),syncErrorHandler(setSyncError,'Não foi possível sincronizar check-ins.'));
- queueUserRowsSync('clients',user.id,importedClients.map(clientToCloud),syncErrorHandler(setSyncError,'Não foi possível sincronizar clientes.'));
- queueUserRowsSync('reminders',user.id,importedReminders.map(reminderToCloud),syncErrorHandler(setSyncError,'Não foi possível sincronizar lembretes.'));
- queueSettingsSync(user.id,{entries:importedEntries,pinned:data.pinnedPhrase||null,templates:importedTemplates,theme},syncErrorHandler(setSyncError,'Não foi possível sincronizar configurações.'));
  }
  catch (err) {
  alert('Arquivo inválido. Verifique se é um backup exportado por este app.');
@@ -801,7 +644,7 @@ function SynapseWorkspace({ user, onLogout }) {
   const existing=[...clients]; let added=0,updated=0;
   imported.forEach(incoming=>{ const keyName=normalize(incoming.name), keyContact=normalize(incoming.contact); const index=existing.findIndex(c=>normalize(c.name)===keyName && (!keyContact || normalize(c.contact)===keyContact)); if(index>=0){existing[index]={...existing[index],...incoming,id:existing[index].id};updated++;}else{existing.push(incoming);added++;} });
   if (!confirm(`Foram encontrados ${imported.length} clientes.\n\nNovos: ${added}\nAtualizados: ${updated}\n\nOs clientes serão adicionados ou atualizados sem apagar os atuais. Continuar?`)) return;
-  setClients(existing); queueUserRowsSync('clients',user.id,existing.map(clientToCloud),syncErrorHandler(setSyncError,'Não foi possível sincronizar clientes.')); setExcelReview(null); setTab('clientes'); alert(`Importação concluída.\n\nNovos clientes: ${added}\nClientes atualizados: ${updated}`);
+  setClients(existing); setExcelReview(null); setTab('clientes'); alert(`Importação concluída.\n\nNovos clientes: ${added}\nClientes atualizados: ${updated}`);
  }
  async function askAI() {
   const key=aiKey.trim(); if(!key){setAiAnswer('Cole sua chave do Gemini para ativar a IA. Ela fica somente nesta sessão do navegador.');return;}
@@ -1325,6 +1168,21 @@ function WorkspaceHeader({tab,setTab,theme,toggleTheme,user,onLogout}) {
 function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout }) {
  const fileInputRef = React.useRef(null);
  const excelInputRef = React.useRef(null);
+ const collapseTimer = React.useRef(null);
+ const [expanded, setExpanded] = React.useState(false);
+ const openSidebar = () => {
+  if (collapseTimer.current) window.clearTimeout(collapseTimer.current);
+  setExpanded(true);
+ };
+ const scheduleCollapse = () => {
+  if (collapseTimer.current) window.clearTimeout(collapseTimer.current);
+  collapseTimer.current = window.setTimeout(() => {
+   setExpanded(false);
+  }, 140);
+ };
+ React.useEffect(() => () => {
+  if (collapseTimer.current) window.clearTimeout(collapseTimer.current);
+ }, []);
  const items = [
  { key: 'painel', label: 'Painel', IconC: LayoutDashboard },
  { key: 'mental', label: 'Mental', IconC: Sparkles },
@@ -1339,7 +1197,7 @@ function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, 
   React.createElement('input',{ref:fileInputRef,type:'file',accept:'application/json',className:'hidden',onChange:e=>{const f=e.target.files?.[0];if(f)importBackup(f);e.target.value='';}}),
   React.createElement('input',{ref:excelInputRef,type:'file',accept:'.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv',className:'hidden',onChange:e=>{const f=e.target.files?.[0];if(f)importExcel(f);e.target.value='';}})
  );
- return React.createElement('aside',{className:'synapse-sidebar'},
+ return React.createElement('aside',{className:`synapse-sidebar${expanded?' is-expanded':''}`,onMouseEnter:openSidebar,onMouseLeave:scheduleCollapse,onFocus:openSidebar,onBlur:e=>{if(!e.currentTarget.contains(e.relatedTarget))scheduleCollapse();},'aria-label':'Navegação principal'},
   React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},'S'),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
   React.createElement('nav',{className:'sidebar-nav'},items.map(({key,label,IconC})=>React.createElement('button',{key,onClick:()=>setTab(key),className:tab===key?'active':'',title:label},React.createElement(IconC,{size:17}),React.createElement('span',null,label)))),
   React.createElement('div',{className:'sidebar-bottom'},React.createElement('div',{className:'sidebar-tools'},React.createElement('div',{className:'flex items-center gap-1.5 text-sm',style:{color:streak>0?'var(--ember)':'var(--muted)'}},React.createElement(Flame,{size:16,strokeWidth:2}),React.createElement('span',null,streak,' ',streak===1?'dia':'dias')),backupButtons),React.createElement('div',{className:'account-name'},React.createElement('span',{className:'account-avatar'},(user?.email||'S').slice(0,1).toUpperCase()),React.createElement('div',null,React.createElement('small',null,'Conta pessoal'),React.createElement('b',null,user?.email||'Synapse')),React.createElement('button',{onClick:onLogout,className:'top-logout'},'Sair')))
