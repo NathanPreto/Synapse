@@ -10,7 +10,7 @@
 
 <!-- Identidade visual / ícone do Synapse -->
 <link rel="icon" type="image/png" href="synapse-mark.png" />
-<link rel="apple-touch-icon" href="synapse-mark.png" />
+<link rel="apple-touch-icon" href="pwa-icon-180.svg" />
 <link rel="manifest" href="manifest.webmanifest" />
 
 <!-- Dependências externas fixadas para builds reproduzíveis. -->
@@ -27,5 +27,14 @@
 <body>
 <div id="root"></div>
 <script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function (error) {
+        console.warn('Synapse PWA: service worker não registrado.', error);
+      });
+    });
+  }
+</script>
 </body>
 </html>
