@@ -8,10 +8,10 @@
   "theme_color": "#161816",
   "icons": [
     {
-      "src": "synapse-mark.png",
-      "sizes": "192x192",
+      "src": "synapse-mark.png?v=2",
+      "sizes": "270x250",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
