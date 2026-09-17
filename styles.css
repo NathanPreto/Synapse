@@ -577,3 +577,48 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
     transition: none !important;
   }
 }
+
+/* ================================================================
+   Synapse — preenchimento dinâmico real da área principal
+   Desktop only. A sidebar fica fixa para manter uma área de hover
+   estável, enquanto o GRID do layout abre uma coluna somente quando
+   o JavaScript adiciona .is-sidebar-open. Assim, o conteúdo principal
+   se desloca para o lado em vez de ficar escondido sob a sidebar.
+   ================================================================ */
+@media (min-width: 861px) and (hover: hover) {
+  /* MUDANÇA DE PREENCHIMENTO DINÂMICO:
+     fechado = nenhuma coluna reservada para a sidebar. */
+  .synapse-layout {
+    grid-template-columns: 0 minmax(0, 1fr) !important;
+    transition: grid-template-columns 420ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  /* MUDANÇA DE PREENCHIMENTO DINÂMICO:
+     aberto = a grade reserva 280px e empurra o conteúdo principal. */
+  .synapse-layout.is-sidebar-open {
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+  }
+
+  /* A sidebar mantém uma faixa fixa de 76px para receber hover
+     mesmo quando a grade não reserva espaço. Ao abrir, cresce até
+     a mesma largura que a coluna reservada pelo grid. */
+  .synapse-sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 76px;
+    height: 100dvh;
+    box-sizing: border-box;
+    z-index: 100;
+    transition:
+      width 420ms cubic-bezier(.22, 1, .36, 1),
+      padding 420ms cubic-bezier(.22, 1, .36, 1),
+      background-color 300ms ease-in-out,
+      box-shadow 420ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .synapse-sidebar.is-open {
+    width: 280px;
+  }
+}
