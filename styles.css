@@ -56,6 +56,30 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 @media(max-width:860px){.synapse-layout{grid-template-columns:1fr}.synapse-sidebar{position:static;height:auto;padding:14px 16px;border-right:0;border-bottom:1px solid var(--border)}.sidebar-brand{padding:0 0 12px}.sidebar-nav{display:flex;overflow-x:auto;padding-bottom:2px}.sidebar-nav button{width:auto;white-space:nowrap;min-height:38px;padding:9px 10px}.sidebar-bottom{display:none}.synapse-main{padding:22px 18px}.workspace-header{margin-bottom:12px}.workspace-header h1{font-size:34px}.header-primary{padding:0 11px}.workspace-content{padding-top:10px!important}}
 @media(max-width:480px){.workspace-actions .header-icon{display:none}.header-primary{font-size:11px}.sidebar-brand small{display:none}.sidebar-brand{padding-bottom:10px}.synapse-sidebar{padding:12px}.workspace-header h1{font-size:31px}}
 
+/* Navegação lateral recolhível no desktop: expande com hover ou foco, sem alterar o comportamento mobile. */
+@media (min-width:1025px) and (hover:hover){
+ .synapse-layout{grid-template-columns:72px minmax(0,1fr);transition:grid-template-columns .22s ease}
+ .synapse-sidebar{padding-left:10px;padding-right:10px;overflow-x:hidden;transition:padding .22s ease}
+ .sidebar-brand{justify-content:center;padding-left:0;padding-right:0;gap:0}
+ .sidebar-brand b,.sidebar-brand small,.sidebar-nav button span,.sidebar-tools>div:first-child span,.account-name>div{opacity:0;width:0;overflow:hidden;white-space:nowrap;pointer-events:none;transition:opacity .14s ease,width .22s ease}
+ .sidebar-nav button{justify-content:center;padding-left:9px;padding-right:9px}
+ .sidebar-tools{justify-content:center}
+ .account-name{justify-content:center}
+ .account-name .top-logout{opacity:0;width:0;padding-left:0;padding-right:0;overflow:hidden;pointer-events:none}
+ .synapse-sidebar:hover,.synapse-sidebar:focus-within{padding-left:18px;padding-right:18px}
+ .synapse-layout:has(.synapse-sidebar:hover),.synapse-layout:has(.synapse-sidebar:focus-within){grid-template-columns:258px minmax(0,1fr)}
+ .synapse-sidebar:hover .sidebar-brand,.synapse-sidebar:focus-within .sidebar-brand{justify-content:flex-start;gap:11px;padding-left:8px;padding-right:8px}
+ .synapse-sidebar:hover .sidebar-brand b,.synapse-sidebar:hover .sidebar-brand small,.synapse-sidebar:hover .sidebar-nav button span,.synapse-sidebar:hover .sidebar-tools>div:first-child span,.synapse-sidebar:hover .account-name>div,
+ .synapse-sidebar:focus-within .sidebar-brand b,.synapse-sidebar:focus-within .sidebar-brand small,.synapse-sidebar:focus-within .sidebar-nav button span,.synapse-sidebar:focus-within .sidebar-tools>div:first-child span,.synapse-sidebar:focus-within .account-name>div{opacity:1;width:auto;pointer-events:auto}
+ .synapse-sidebar:hover .sidebar-nav button,.synapse-sidebar:focus-within .sidebar-nav button{justify-content:flex-start;padding-left:12px;padding-right:12px}
+ .synapse-sidebar:hover .sidebar-tools,.synapse-sidebar:focus-within .sidebar-tools{justify-content:space-between}
+ .synapse-sidebar:hover .account-name,.synapse-sidebar:focus-within .account-name{justify-content:flex-start}
+ .synapse-sidebar:hover .account-name .top-logout,.synapse-sidebar:focus-within .account-name .top-logout{opacity:1;width:auto;padding-left:8px;padding-right:8px;pointer-events:auto}
+}
+@media (prefers-reduced-motion:reduce){
+ .synapse-layout,.synapse-sidebar,.sidebar-brand b,.sidebar-brand small,.sidebar-nav button span,.sidebar-tools>div:first-child span,.account-name>div,.account-name .top-logout{transition:none!important}
+}
+
 /* Responsividade real: os grupos passam a se reorganizar, sem comprimir controles. */
 .synapse-main,.workspace-content,.pop,.pop>*,.clientes-pipeline,.cliente-stage,.smart-modal,.diary-layout>*{min-width:0}
 .synapse-main button{max-width:100%}.synapse-main input,.synapse-main textarea,.synapse-main select{max-width:100%}
