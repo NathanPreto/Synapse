@@ -474,3 +474,106 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
     animation: none !important;
   }
 }
+
+/* Clientes — minimização individual de cada etapa do pipeline */
+.clientes-ui .cliente-stage-header {
+  min-height: 30px;
+  margin-bottom: 8px;
+}
+
+.clientes-ui .cliente-stage-title {
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.clientes-ui .cliente-stage-count {
+  opacity: .8;
+  white-space: nowrap;
+}
+
+.clientes-ui .cliente-stage-toggle {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform 180ms ease-in-out, background 180ms ease-in-out, color 180ms ease-in-out, border-color 180ms ease-in-out;
+}
+
+.clientes-ui .cliente-stage-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--muted) 30%, var(--border));
+}
+
+.clientes-ui .cliente-stage-toggle svg {
+  transition: transform 320ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.clientes-ui .cliente-stage.is-collapsed .cliente-stage-toggle svg {
+  transform: rotate(-90deg);
+}
+
+.clientes-ui .cliente-stage-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  min-height: 0;
+  overflow: hidden;
+  transition: grid-template-rows 420ms cubic-bezier(.22, 1, .36, 1), opacity 240ms ease-in-out;
+}
+
+.clientes-ui .cliente-stage-body > .space-y-2 {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.clientes-ui .cliente-stage.is-collapsed .cliente-stage-body {
+  grid-template-rows: 0fr;
+  opacity: .35;
+}
+
+.clientes-ui .cliente-stage.is-collapsed .cliente-stage-header {
+  margin-bottom: 0;
+}
+
+@media (max-width: 860px), (hover: none) {
+  .clientes-ui .cliente-stage-body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    overflow: visible;
+    transition: none;
+  }
+
+  .clientes-ui .cliente-stage.is-collapsed .cliente-stage-body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .clientes-ui .cliente-stage.is-collapsed .cliente-stage-header {
+    margin-bottom: 8px;
+  }
+
+  .clientes-ui .cliente-stage-toggle {
+    transition: none;
+  }
+
+  .clientes-ui .cliente-stage-toggle svg {
+    transform: none !important;
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clientes-ui .cliente-stage-body,
+  .clientes-ui .cliente-stage-toggle,
+  .clientes-ui .cliente-stage-toggle svg {
+    transition: none !important;
+  }
+}

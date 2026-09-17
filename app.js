@@ -1322,30 +1322,50 @@ function Clientes({ clients, addClient, updateClient, removeClient, importExcel,
  const [name, setName] = useState('');
  const [contact, setContact] = useState('');
  const [expanded, setExpanded] = useState(null);
+ const [collapsedStages, setCollapsedStages] = useState({});
  const [showTemplates, setShowTemplates] = useState(false);
- return (React.createElement("div", { className: "pop clientes-ui" },
- React.createElement(Section, { title: "Clientes", right: React.createElement("div", { className: "flex items-center gap-3" },
- React.createElement("button", { onClick: () => { var _a; return (_a = excelInputRef.current) === null || _a === void 0 ? void 0 : _a.click(); }, className: "flex items-center gap-1 text-sm", style: { color: 'var(--teal)' } },
- React.createElement(Upload, { size: 15 }),
- " importar Excel"),
- React.createElement("button", { onClick: () => setShowAdd(v => !v), className: "flex items-center gap-1 text-sm", style: { color: 'var(--teal)' } },
- React.createElement(Plus, { size: 15 }),
- " novo"),
- React.createElement("button", { onClick: () => setShowTemplates(true), className: "flex items-center gap-1 text-sm", style: { color: 'var(--teal)' } }, React.createElement(CopyIcon, { size: 15 }), " modelos"),
- React.createElement("input", { ref: excelInputRef, type: "file", accept: ".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv", className: "hidden", onChange: (e) => { var _a; const f = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (f) importExcel(f); e.target.value = ''; } })) },
- showTemplates && React.createElement(TemplatesModal, { templates, setTemplates, onClose: () => setShowTemplates(false) }),
- showAdd && (React.createElement("div", { className: "p-3 rounded mb-3 flex flex-col md:flex-row gap-2", style: { background: 'var(--surface)', border: '1px solid var(--border)' } },
- React.createElement("input", { value: name, onChange: e => setName(e.target.value), placeholder: "Nome", className: "flex-1 p-2 rounded text-sm" }),
- React.createElement("input", { value: contact, onChange: e => setContact(e.target.value), placeholder: "Contato (telefone/e-mail)", className: "flex-1 p-2 rounded text-sm" }),
- React.createElement("button", { onClick: () => { if (!name.trim())
- return; addClient(name.trim(), contact.trim()); setName(''); setContact(''); setShowAdd(false); }, className: "px-3 py-2 rounded text-sm", style: { background: 'var(--teal)', color: 'var(--on-accent)', fontWeight: 500 } }, "Adicionar"))),
- React.createElement("div", { className: "clientes-pipeline" }, STAGES.map(stage => (React.createElement("div", { key: stage.key, className: "cliente-stage" },
- React.createElement("div", { className: "flex items-center gap-1.5 text-xs mb-2", style: { color: stage.color } },
- React.createElement("div", { className: "w-1.5 h-1.5 rounded-full", style: { background: stage.color } }),
- stage.label,
- " \u00B7 ",
- clients.filter(c => c.stage === stage.key).length),
- React.createElement("div", { className: "space-y-2" }, clients.filter(c => c.stage === stage.key).map(c => (React.createElement(ClientCard, { key: c.id, client: c, expanded: expanded === c.id, onToggle: () => setExpanded(expanded === c.id ? null : c.id), updateClient: updateClient, removeClient: removeClient, templates })))))))))));
+ return React.createElement('div', { className: 'pop clientes-ui' },
+  React.createElement(Section, { title: 'Clientes', right: React.createElement('div', { className: 'flex items-center gap-3' },
+   React.createElement('button', { onClick: () => excelInputRef.current?.click(), className: 'flex items-center gap-1 text-sm', style: { color: 'var(--teal)' } }, React.createElement(Upload, { size: 15 }), ' importar Excel'),
+   React.createElement('button', { onClick: () => setShowAdd(v => !v), className: 'flex items-center gap-1 text-sm', style: { color: 'var(--teal)' } }, React.createElement(Plus, { size: 15 }), ' novo'),
+   React.createElement('button', { onClick: () => setShowTemplates(true), className: 'flex items-center gap-1 text-sm', style: { color: 'var(--teal)' } }, React.createElement(CopyIcon, { size: 15 }), ' modelos'),
+   React.createElement('input', { ref: excelInputRef, type: 'file', accept: '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv', className: 'hidden', onChange: e => { const f = e.target.files?.[0]; if (f) importExcel(f); e.target.value = ''; } })
+  ) }),
+  showTemplates && React.createElement(TemplatesModal, { templates, setTemplates, onClose: () => setShowTemplates(false) }),
+  showAdd && React.createElement('div', { className: 'p-3 rounded mb-3 flex flex-col md:flex-row gap-2', style: { background: 'var(--surface)', border: '1px solid var(--border)' } },
+   React.createElement('input', { value: name, onChange: e => setName(e.target.value), placeholder: 'Nome', className: 'flex-1 p-2 rounded text-sm' }),
+   React.createElement('input', { value: contact, onChange: e => setContact(e.target.value), placeholder: 'Contato (telefone/e-mail)', className: 'flex-1 p-2 rounded text-sm' }),
+   React.createElement('button', { onClick: () => { if (!name.trim()) return; addClient(name.trim(), contact.trim()); setName(''); setContact(''); setShowAdd(false); }, className: 'px-3 py-2 rounded text-sm', style: { background: 'var(--teal)', color: 'var(--on-accent)', fontWeight: 500 } }, 'Adicionar')
+  ),
+  React.createElement('div', { className: 'clientes-pipeline' }, STAGES.map(stage => {
+   const stageClients = clients.filter(c => c.stage === stage.key);
+   const collapsed = !!collapsedStages[stage.key];
+   return React.createElement('div', { key: stage.key, className: 'cliente-stage' + (collapsed ? ' is-collapsed' : '') },
+    React.createElement('div', { className: 'cliente-stage-header flex items-center justify-between gap-2', style: { color: stage.color } },
+     React.createElement('div', { className: 'flex items-center gap-1.5 text-xs min-w-0' },
+      React.createElement('div', { className: 'w-1.5 h-1.5 rounded-full shrink-0', style: { background: stage.color } }),
+      React.createElement('span', { className: 'cliente-stage-title' }, stage.label),
+      React.createElement('span', { className: 'cliente-stage-count' }, ' · ' + stageClients.length)
+     ),
+     React.createElement('button', {
+      type: 'button',
+      className: 'cliente-stage-toggle',
+      onClick: e => { e.stopPropagation(); setCollapsedStages(prev => ({ ...prev, [stage.key]: !prev[stage.key] })); },
+      'aria-expanded': !collapsed,
+      'aria-label': (collapsed ? 'Expandir ' : 'Minimizar ') + stage.label,
+      title: collapsed ? 'Expandir' : 'Minimizar'
+     }, React.createElement(ChevronDown, { size: 15 }))
+    ),
+    React.createElement('div', { className: 'cliente-stage-body' },
+     React.createElement('div', { className: 'space-y-2' }, stageClients.map(c => React.createElement(ClientCard, {
+      key: c.id, client: c, expanded: expanded === c.id,
+      onToggle: () => setExpanded(expanded === c.id ? null : c.id),
+      updateClient, removeClient, templates
+     })))
+    )
+   );
+  }))
+ );
 }
 function ClientCard({ client, expanded, onToggle, updateClient, removeClient, templates = [] }) {
  const temp = TEMPS.find(t => t.key === client.temp);
