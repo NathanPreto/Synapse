@@ -362,6 +362,7 @@ function SynapseWorkspace({ user, onLogout }) {
  const [loadError, setLoadError] = useState('');
  const [loadNonce, setLoadNonce] = useState(0);
  const [tab, setTab] = useState('painel');
+ const [sidebarOpen, setSidebarOpen] = useState(false);
  const [checkins, setCheckins] = useState([]);
  const [clients, setClients] = useState([]);
  const [reminders, setReminders] = useState([]);
@@ -683,8 +684,8 @@ function SynapseWorkspace({ user, onLogout }) {
  }
  return React.createElement(Shell, { theme },
   syncError && React.createElement('div',{className:'sync-banner error'},syncError),
-  React.createElement('div',{className:'synapse-layout'},
-  React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout }),
+  React.createElement('div',{className:'synapse-layout'+(sidebarOpen?' is-sidebar-open':'')},
+  React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange:setSidebarOpen }),
   React.createElement('main',{className:'synapse-main'},
   React.createElement(WorkspaceHeader,{tab,setTab,theme,toggleTheme,user,onLogout}),
   React.createElement('button', { onClick: () => setAiOpen(true), className: 'ai-fab', title: 'Assistente de IA' }, React.createElement(Sparkles, { size: 17 }), ' IA'),
@@ -1165,14 +1166,14 @@ function WorkspaceHeader({tab,setTab,theme,toggleTheme,user,onLogout}) {
   )
  );
 }
-function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout }) {
+function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange }) {
  const fileInputRef = React.useRef(null);
  const sidebarRef = React.useRef(null);
  const [sidebarOpen, setSidebarOpen] = React.useState(false);
- const openSidebar = React.useCallback(() => setSidebarOpen(true), []);
+ const openSidebar = React.useCallback(() => { setSidebarOpen(true); onSidebarChange?.(true); }, [onSidebarChange]);
  const closeSidebarIfUnfocused = React.useCallback((event) => {
   const next = event?.relatedTarget;
-  if (!next || !sidebarRef.current?.contains(next)) setSidebarOpen(false);
+  if (!next || !sidebarRef.current?.contains(next)) { setSidebarOpen(false); onSidebarChange?.(false); }
  }, []);
  const excelInputRef = React.useRef(null);
  const items = [
