@@ -622,3 +622,78 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
     width: 280px;
   }
 }
+
+/* ================================================================
+   Synapse — correção final do preenchimento dinâmico da sidebar
+   ----------------------------------------------------------------
+   Este override fica por último para neutralizar o comportamento
+   anterior de grid/overlay sem tocar nas media queries mobile.
+   Desktop somente: >= 861px + dispositivo com hover.
+
+   FECHADA: a página usa 100% da largura.
+   ABERTA: a página reduz 280px e se desloca 280px para a direita.
+   Assim a sidebar ocupa espaço REAL e nunca cobre o conteúdo.
+   ================================================================ */
+@media (min-width: 861px) and (hover: hover) {
+  /* Não reservar uma coluna fixa enquanto a sidebar está recolhida. */
+  .synapse-layout {
+    display: block !important;
+    position: relative;
+    width: 100%;
+    min-height: 100dvh;
+  }
+
+  /* A faixa de 76px continua sendo a área de hover da navegação. */
+  .synapse-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0;
+    width: 76px !important;
+    height: 100dvh;
+    box-sizing: border-box;
+    z-index: 100;
+    transition:
+      width 420ms cubic-bezier(.22, 1, .36, 1),
+      padding 420ms cubic-bezier(.22, 1, .36, 1),
+      box-shadow 420ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .synapse-sidebar.is-open {
+    width: 280px !important;
+    box-shadow: 8px 0 30px rgba(22,24,22,.045);
+  }
+
+  /* FECHADA: nenhum espaço lateral é reservado para a sidebar. */
+  .synapse-main {
+    width: 100% !important;
+    max-width: 1530px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box;
+    transition:
+      width 420ms cubic-bezier(.22, 1, .36, 1),
+      margin-left 420ms cubic-bezier(.22, 1, .36, 1),
+      margin-right 420ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  /*
+     >>> PREENCHIMENTO DINÂMICO APLICADO AQUI <<<
+     Quando o JS adiciona .is-sidebar-open ao .synapse-layout,
+     criamos espaço físico de 280px para a sidebar e deslocamos
+     o conteúdo. Portanto nada fica cortado ou escondido embaixo.
+  */
+  .synapse-layout.is-sidebar-open .synapse-main {
+    width: calc(100% - 280px) !important;
+    max-width: none;
+    margin-left: 280px !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* Fallback de acessibilidade: sem animação quando solicitado pelo SO. */
+@media (prefers-reduced-motion: reduce) and (min-width: 861px) and (hover: hover) {
+  .synapse-layout,
+  .synapse-sidebar,
+  .synapse-main {
+    transition: none !important;
+  }
+}
