@@ -1178,7 +1178,7 @@ function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, 
   if (collapseTimer.current) window.clearTimeout(collapseTimer.current);
   collapseTimer.current = window.setTimeout(() => {
    setExpanded(false);
-  }, 140);
+  }, 900);
  };
  React.useEffect(() => () => {
   if (collapseTimer.current) window.clearTimeout(collapseTimer.current);
