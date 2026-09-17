@@ -4,6 +4,6 @@
  * Nunca coloque aqui uma secret key ou service_role.
  */
 window.SYNAPSE_CONFIG = {
-  supabaseUrl: 'https://bvdsfgzvubynxkjxyxc.supabase.co',
+  supabaseUrl: 'https://bvdsfgzvubynxjkjxyxc.supabase.co',
   supabaseKey: 'sb_publishable_-JQZeqUtRmVHgXh5LsnjWA_efRlb8YU'
 };
