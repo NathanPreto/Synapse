@@ -11,10 +11,10 @@
 <meta name="description" content="CRM de vendas + mentalidade comercial, com autenticação e persistência em nuvem." />
 <title>Synapse | Gestão comercial e mentalidade</title>
 
-<link rel="manifest" href="manifest.json" />
-<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
-<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="manifest" href="manifest.json?v=3" />
+<link rel="icon" href="favicon-32.png?v=3" type="image/png" sizes="32x32" />
+<link rel="icon" href="icon-192.png?v=3" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
 
 <style>
   #synapse-install-button {
@@ -39,14 +39,11 @@
 <!-- Dependências externas fixadas para builds reproduzíveis. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" integrity="sha512-QVs8Lo43F9lSuBykadDb0oSXDL/BbZ588urWVCRwSIoewQv/Ewg1f84mK3U790bZ0FfhFa1YSQUmIhG+pIRKeg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" integrity="sha512-6a1107rTlA4gYpgHAqbwLAtxmWipBdJFcq8y5S/aTge3Bp+VAklABm2LO+Kg51vOWR9JMZq1Ovjl5tpluNpTeQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<!-- Tailwind Play CDN é um runtime gerado pelo próprio CDN e não oferece SRI/CORS compatível; por isso permanece versionado, sem um hash SRI inventado. -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
-<!-- Supabase UMD permanece em CDN para preservar o runtime atual; a versão está fixada. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
 
 <script src="config.js" defer></script>
-<!-- Runtime interno consolidado: evita falhas de caminho/ordem quando o projeto é enviado como arquivos soltos. -->
 <script src="synapse-runtime.js" defer></script>
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -55,16 +52,12 @@
 <button id="synapse-install-button" type="button" aria-label="Instalar Synapse">Instalar Synapse</button>
 <script src="app.js" defer></script>
 <script>
-  // Registra o service worker do app shell (ícone/splash consistentes + abertura
-  // rápida). Falha silenciosamente em navegadores sem suporte ou em file://.
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=3').catch(() => {});
     });
   }
 
-  // Quando o navegador considera o site instalável, guarda o evento nativo e
-  // oferece uma ação explícita de instalação. A decisão final continua sendo do navegador.
   let deferredInstallPrompt = null;
   const installButton = document.getElementById('synapse-install-button');
 

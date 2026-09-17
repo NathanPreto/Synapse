@@ -1,7 +1,6 @@
-// Service worker do Synapse: cache do "app shell" para abertura instantânea
-// e uso básico offline. Não intercepta chamadas ao Supabase nem ao Gemini —
-// essas continuam sempre indo direto para a rede.
-const CACHE_NAME = 'synapse-shell-v2';
+// Service worker do Synapse: cache do app shell para abertura instantânea
+// e uso básico offline. Não intercepta chamadas ao Supabase nem ao Gemini.
+const CACHE_NAME = 'synapse-shell-v3';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -14,13 +13,13 @@ const SHELL_FILES = [
   './services/storage.js',
   './services/supabase.js',
   './services/spreadsheet.js',
-  './manifest.json',
+  './manifest.json?v=3',
   './synapse-mark.png',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-maskable.png',
-  './apple-touch-icon.png',
-  './favicon-32.png'
+  './icon-192.png?v=3',
+  './icon-512.png?v=3',
+  './icon-maskable.png?v=3',
+  './apple-touch-icon.png?v=3',
+  './favicon-32.png?v=3'
 ];
 
 self.addEventListener('install', (event) => {
@@ -43,15 +42,9 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Estratégia: network-first para todo mundo (pra não servir uma versão velha
-// do app.js sem querer), com fallback pro cache quando estiver offline.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-
-  // Nunca cachear/interceptar chamadas a APIs externas (Supabase, Gemini, CDNs).
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) {
-    return;
-  }
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
 
   event.respondWith(
     fetch(req)
