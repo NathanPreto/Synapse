@@ -259,3 +259,220 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
  .password-rules{grid-template-columns:1fr 1fr}
 }
 @media(prefers-reduced-motion:reduce){.auth-google,.auth-submit,.auth-form input{transition:none}}
+
+
+/* ---------- Synapse motion layer: navegação fluida ---------- */
+@media (min-width:1025px) and (hover:hover){
+  .synapse-layout{
+    grid-template-columns:72px minmax(0,1fr);
+    transition:grid-template-columns 420ms cubic-bezier(.22,1,.36,1);
+  }
+  .synapse-sidebar{
+    position:sticky;
+    overflow-x:hidden;
+    isolation:isolate;
+    padding-left:10px;
+    padding-right:10px;
+    transition:
+      padding 420ms cubic-bezier(.22,1,.36,1),
+      background-color 300ms ease,
+      box-shadow 420ms cubic-bezier(.22,1,.36,1);
+    box-shadow:0 0 0 rgba(0,0,0,0);
+  }
+  .sidebar-brand{
+    justify-content:center;
+    padding-left:0;
+    padding-right:0;
+    gap:0;
+    transition:
+      gap 420ms cubic-bezier(.22,1,.36,1),
+      padding 420ms cubic-bezier(.22,1,.36,1),
+      transform 420ms cubic-bezier(.22,1,.36,1);
+  }
+  .sidebar-brand > div:last-child,
+  .account-name > div{
+    width:0;
+    max-width:0;
+    min-width:0;
+    overflow:hidden;
+    white-space:nowrap;
+    opacity:0;
+    transform:translate3d(-8px,0,0);
+    pointer-events:none;
+    transition:
+      width 420ms cubic-bezier(.22,1,.36,1),
+      max-width 420ms cubic-bezier(.22,1,.36,1),
+      opacity 180ms ease,
+      transform 420ms cubic-bezier(.22,1,.36,1);
+  }
+  .sidebar-brand > div:last-child{flex:0 0 auto}
+  .sidebar-nav button{
+    justify-content:center;
+    padding-left:9px;
+    padding-right:9px;
+    gap:0;
+    transition:
+      padding 420ms cubic-bezier(.22,1,.36,1),
+      gap 420ms cubic-bezier(.22,1,.36,1),
+      background-color 180ms ease,
+      color 180ms ease,
+      transform 180ms ease;
+  }
+  .sidebar-nav button span,
+  .sidebar-tools > div:first-child span{
+    width:0;
+    max-width:0;
+    overflow:hidden;
+    white-space:nowrap;
+    opacity:0;
+    transform:translate3d(-7px,0,0);
+    pointer-events:none;
+    transition:
+      width 420ms cubic-bezier(.22,1,.36,1),
+      max-width 420ms cubic-bezier(.22,1,.36,1),
+      opacity 180ms ease,
+      transform 420ms cubic-bezier(.22,1,.36,1);
+  }
+  .sidebar-tools{
+    justify-content:center;
+    gap:8px;
+    transition:
+      justify-content 420ms cubic-bezier(.22,1,.36,1),
+      gap 420ms cubic-bezier(.22,1,.36,1);
+  }
+  .sidebar-tools > div:first-child{
+    min-width:0;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .sidebar-tools > div:first-child span{max-width:54px}
+  .account-name{
+    justify-content:center;
+    transition:
+      grid-template-columns 420ms cubic-bezier(.22,1,.36,1),
+      gap 420ms cubic-bezier(.22,1,.36,1);
+  }
+  .account-name .top-logout{
+    width:0;
+    max-width:0;
+    min-width:0;
+    padding-left:0;
+    padding-right:0;
+    overflow:hidden;
+    white-space:nowrap;
+    opacity:0;
+    transform:translate3d(7px,0,0);
+    pointer-events:none;
+    transition:
+      width 420ms cubic-bezier(.22,1,.36,1),
+      max-width 420ms cubic-bezier(.22,1,.36,1),
+      padding 420ms cubic-bezier(.22,1,.36,1),
+      opacity 180ms ease,
+      transform 420ms cubic-bezier(.22,1,.36,1),
+      color 180ms ease;
+  }
+  .synapse-layout:has(.synapse-sidebar:hover),
+  .synapse-layout:has(.synapse-sidebar:focus-within){
+    grid-template-columns:270px minmax(0,1fr);
+  }
+  .synapse-sidebar:hover,
+  .synapse-sidebar:focus-within{
+    padding-left:18px;
+    padding-right:18px;
+    box-shadow:10px 0 32px rgba(0,0,0,.07);
+  }
+  .synapse-sidebar:hover .sidebar-brand,
+  .synapse-sidebar:focus-within .sidebar-brand{
+    justify-content:flex-start;
+    gap:11px;
+    padding-left:8px;
+    padding-right:8px;
+  }
+  .synapse-sidebar:hover .sidebar-brand > div:last-child,
+  .synapse-sidebar:focus-within .sidebar-brand > div:last-child{
+    width:142px;
+    max-width:142px;
+    opacity:1;
+    transform:translate3d(0,0,0);
+    pointer-events:auto;
+  }
+  .synapse-sidebar:hover .sidebar-nav button,
+  .synapse-sidebar:focus-within .sidebar-nav button{
+    justify-content:flex-start;
+    padding-left:12px;
+    padding-right:12px;
+    gap:11px;
+  }
+  .synapse-sidebar:hover .sidebar-nav button span,
+  .synapse-sidebar:focus-within .sidebar-nav button span{
+    width:160px;
+    max-width:160px;
+    opacity:1;
+    transform:translate3d(0,0,0);
+    pointer-events:auto;
+  }
+  .synapse-sidebar:hover .sidebar-tools,
+  .synapse-sidebar:focus-within .sidebar-tools{
+    justify-content:space-between;
+  }
+  .synapse-sidebar:hover .sidebar-tools > div:first-child span,
+  .synapse-sidebar:focus-within .sidebar-tools > div:first-child span{
+    width:54px;
+    max-width:54px;
+    opacity:1;
+    transform:translate3d(0,0,0);
+    pointer-events:auto;
+  }
+  .synapse-sidebar:hover .account-name,
+  .synapse-sidebar:focus-within .account-name{
+    justify-content:flex-start;
+    gap:8px;
+  }
+  .synapse-sidebar:hover .account-name > div,
+  .synapse-sidebar:focus-within .account-name > div{
+    width:125px;
+    max-width:125px;
+    opacity:1;
+    transform:translate3d(0,0,0);
+    pointer-events:auto;
+  }
+  .synapse-sidebar:hover .account-name .top-logout,
+  .synapse-sidebar:focus-within .account-name .top-logout{
+    width:32px;
+    max-width:32px;
+    padding-left:8px;
+    padding-right:8px;
+    opacity:1;
+    transform:translate3d(0,0,0);
+    pointer-events:auto;
+  }
+  .synapse-sidebar .brand-mark,
+  .synapse-sidebar .account-avatar,
+  .synapse-sidebar .sidebar-nav button svg,
+  .synapse-sidebar .sidebar-tools svg{
+    flex:0 0 auto;
+    transition:transform 420ms cubic-bezier(.22,1,.36,1);
+  }
+  .synapse-sidebar:hover .brand-mark,
+  .synapse-sidebar:focus-within .brand-mark{
+    transform:translate3d(1px,0,0) scale(1.02);
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .synapse-layout,
+  .synapse-sidebar,
+  .sidebar-brand,
+  .sidebar-brand > div:last-child,
+  .account-name > div,
+  .sidebar-nav button,
+  .sidebar-nav button span,
+  .sidebar-tools,
+  .sidebar-tools > div:first-child span,
+  .account-name,
+  .account-name .top-logout{
+    transition:none!important;
+    transform:none!important;
+  }
+}
