@@ -5,5 +5,5 @@
  */
 window.SYNAPSE_CONFIG = {
   supabaseUrl: 'https://bvdsfgzvubynxjkjxyxc.supabase.co',
-  supabaseKey: 'sua_publishable_key'
+  supabaseKey: 'sb_publishable_-JQZeqUtRmVHgXh5LsnjWA_efRlb8YU'
 };
