@@ -662,12 +662,18 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
     box-shadow: 8px 0 30px rgba(22,24,22,.045);
   }
 
-  /* FECHADA: nenhum espaço lateral é reservado para a sidebar. */
+  /*
+     >>> CORREÇÃO DO ESTADO MINIMIZADO APLICADA AQUI <<<
+     A faixa de 76px da sidebar continua visível, então o conteúdo
+     precisa começar depois dela. Antes, .synapse-main tinha width:100%
+     e ficava por baixo da sidebar fixa, fazendo a lateral da página
+     parecer cortada. Agora o espaço útil é exatamente o restante da viewport.
+  */
   .synapse-main {
-    width: 100% !important;
-    max-width: 1530px;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    width: calc(100% - 76px) !important;
+    max-width: none !important;
+    margin-left: 76px !important;
+    margin-right: 0 !important;
     box-sizing: border-box;
     transition:
       width 420ms cubic-bezier(.22, 1, .36, 1),
