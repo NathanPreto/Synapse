@@ -36,7 +36,13 @@
     const body = payload && typeof payload === 'object' ? payload : {};
     window.SynapseFeedback?.start('Consultando a IA');
     try {
-      const { data, error } = await api.functions.invoke('synapse-ai', { body });
+      const { data: sessionData } = await api.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('Sua sessão expirou. Entre novamente para usar a Syn.');
+      const { data, error } = await api.functions.invoke('synapse-ai', {
+        body,
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
       if (error) {
         let detail = '';
         try {

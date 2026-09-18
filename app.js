@@ -548,7 +548,20 @@ function SynapseWorkspace({ user, onLogout }) {
    setAiMessages(prev => [...prev, { role:'model', text:answer }]);
   } catch(err) {
    window.SynapseLogger?.warn('Falha ao consultar a IA.', err);
-   setAiMessages(prev => [...prev, { role:'model', text:'Não consegui responder agora. Tente novamente em instantes.' }]);
+   const raw = String(err?.message || '').trim();
+   const lower = raw.toLowerCase();
+   const message = lower.includes('sessão expirou')
+    ? 'Sua sessão expirou. Atualize a página e entre novamente.'
+    : lower.includes('não está configurada no servidor')
+     ? 'A Syn ainda não está configurada no servidor. A chave de IA precisa estar cadastrada no secret da Edge Function.'
+     : lower.includes('api key') || lower.includes('api_key') || lower.includes('unauthorized') || lower.includes('permission denied')
+      ? 'A credencial da IA no servidor foi recusada. Verifique a configuração da GEMINI_API_KEY.'
+      : lower.includes('quota') || lower.includes('rate limit') || lower.includes('resource exhausted')
+       ? 'A IA atingiu o limite de uso. Tente novamente em alguns instantes.'
+       : lower.includes('demorou demais') || lower.includes('timeout')
+        ? 'A Syn demorou para responder. Tente novamente.'
+        : raw || 'Não foi possível consultar a Syn agora.';
+   setAiMessages(prev => [...prev, { role:'model', text:message }]);
   } finally { setAiBusy(false); }
  }
  if (loadError) {

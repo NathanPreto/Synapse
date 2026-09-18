@@ -52,6 +52,8 @@ test('Gemini não é mais chamado nem armazenado no navegador', () => {
   assert.equal(app.includes('x-goog-api-key'), false);
   assert.match(backend, /askAI/);
   assert.match(supabase, /functions\.invoke\(['"]synapse-ai['"]/);
+  assert.match(supabase, /getSession\(\)/);
+  assert.match(supabase, /Authorization: `Bearer \$\{accessToken\}`/);
 });
 test('Chat de IA tem histórico, envio e estado de digitação', () => {
   const app = read('app.js');
@@ -184,4 +186,11 @@ test('Edge Function trata CORS e preflight', () => {
   assert.match(fn, /Access-Control-Allow-Origin/);
   assert.match(fn, /req\.method === "OPTIONS"/);
   assert.match(fn, /GEMINI_API_KEY/);
+});
+
+test('Falha da IA não é mascarada no frontend', () => {
+  const app = read('app.js');
+  assert.match(app, /Sua sessão expirou/);
+  assert.match(app, /A Syn ainda não está configurada no servidor/);
+  assert.match(app, /credencial da IA no servidor foi recusada/);
 });
