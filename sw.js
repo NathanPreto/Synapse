@@ -1,6 +1,6 @@
 // Service worker do Synapse: cache do app shell para abertura instantânea
 // e uso básico offline. Chamadas para APIs externas não são interceptadas.
-const CACHE_VERSION = 'v13';
+const CACHE_VERSION = 'v14';
 const CACHE_NAME = `synapse-shell-${CACHE_VERSION}`;
 const SHELL_FILES = [
   './',
@@ -12,15 +12,15 @@ const SHELL_FILES = [
   './app.js',
   './services/supabase.js',
   './services/persistence.js',
-  './manifest.json?v=12',
-  './synapse-logo.svg?v=12',
-  './standard-logo.svg?v=12',
-  './splash-logo.svg?v=12',
-  './icon-192.png?v=12',
-  './icon-512.png?v=12',
-  './icon-maskable.png?v=12',
-  './apple-touch-icon.png?v=12',
-  './favicon-32.png?v=12'
+  './manifest.json?v=14',
+  './synapse-logo.svg?v=14',
+  './standard-logo.svg?v=14',
+  './splash-logo.svg?v=14',
+  './icon-192.png?v=14',
+  './icon-512.png?v=14',
+  './icon-maskable.png?v=14',
+  './apple-touch-icon.png?v=14',
+  './favicon-32.png?v=14'
 ];
 
 self.addEventListener('install', (event) => {
