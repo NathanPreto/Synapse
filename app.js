@@ -333,24 +333,27 @@ function SynapseWorkspace({ user, onLogout }) {
   setLoadError('');
   (async () => {
    try {
-    const cloud = await loadSynapseData(user.id);
-    if (!active) return;
-    if (cloud.hasCloudData) {
-     setClients(cloud.clients); setReminders(cloud.reminders); setCheckins(cloud.checkins);
-     setDesidentificationEntries(cloud.entries); setPinnedPhrase(cloud.pinned); setTemplates(cloud.templates);
-     if (cloud.theme) setTheme(cloud.theme);
-    } else {
-     const [c1,c2,c3,c4,c5] = await Promise.all([
-      storage.get('mindset-checkins').catch(()=>null), storage.get('mindset-clients').catch(()=>null), storage.get('mindset-reminders').catch(()=>null), storage.get('mental-vendas-desidentificacao').catch(()=>null), storage.get('mental-vendas-templates').catch(()=>null)
+     const [cloud, c1, c2, c3, c4, c5, metaRaw] = await Promise.all([
+      loadSynapseData(user.id), storage.get('mindset-checkins').catch(()=>null), storage.get('mindset-clients').catch(()=>null),
+      storage.get('mindset-reminders').catch(()=>null), storage.get('mental-vendas-desidentificacao').catch(()=>null),
+      storage.get('mental-vendas-templates').catch(()=>null), storage.get('mindset-clients-meta').catch(()=>null)
      ]);
-     const localClients=c2?JSON.parse(c2.value):[]; const localReminders=c3?JSON.parse(c3.value):[]; const localCheckins=c1?JSON.parse(c1.value):[];
-     const localMental=c4?JSON.parse(c4.value):{}; const localTemplates=c5?JSON.parse(c5.value):[];
-     if(localClients.length||localReminders.length||localCheckins.length||localTemplates.length||localMental.entries?.length||localMental.pinned){
-      setLocalMigrationData({clients:localClients,reminders:localReminders,checkins:localCheckins,entries:localMental.entries||[],pinned:localMental.pinned||null,templates:localTemplates});
-      setMigrationRequested(true);
+     if (!active) return;
+     const localClients=c2?JSON.parse(c2.value):[], localReminders=c3?JSON.parse(c3.value):[], localCheckins=c1?JSON.parse(c1.value):[];
+     const localMental=c4?JSON.parse(c4.value):{}, localTemplates=c5?JSON.parse(c5.value):[];
+     let meta={}; try{meta=metaRaw?JSON.parse(metaRaw.value):{};}catch(_){}
+     const dirtyIds=new Set(Array.isArray(meta.dirty)?meta.dirty.map(String):[]), deletedIds=new Set(Array.isArray(meta.deleted)?meta.deleted.map(String):[]);
+     if(cloud.hasCloudData){
+      const localById=new Map(localClients.map(c=>[String(c.id),c])), cloudById=new Map(cloud.clients.map(c=>[String(c.id),c]));
+      const mergedClients=cloud.clients.filter(c=>!deletedIds.has(String(c.id))).map(c=>dirtyIds.has(String(c.id))&&localById.has(String(c.id))?localById.get(String(c.id)):c);
+      localClients.forEach(c=>{const id=String(c.id);if(!cloudById.has(id)&&!deletedIds.has(id))mergedClients.push(c);});
+      setClients(mergedClients); setReminders(cloud.reminders.length?cloud.reminders:localReminders); setCheckins(cloud.checkins.length?cloud.checkins:localCheckins);
+      setDesidentificationEntries(cloud.entries.length?cloud.entries:(localMental.entries||[])); setPinnedPhrase(cloud.pinned||localMental.pinned||null); setTemplates(cloud.templates.length?cloud.templates:localTemplates);
+      if(cloud.theme)setTheme(cloud.theme);
+     }else if(localClients.length||localReminders.length||localCheckins.length||localTemplates.length||localMental.entries?.length||localMental.pinned){
+      setLocalMigrationData({clients:localClients,reminders:localReminders,checkins:localCheckins,entries:localMental.entries||[],pinned:localMental.pinned||null,templates:localTemplates}); setMigrationRequested(true);
      }
-    }
-   } catch(e) {
+    } catch(e) {
     window.SynapseLogger?.error('Falha ao carregar Synapse.', e);
     if (active) setLoadError('Não foi possível carregar seus dados da nuvem. Seus dados não foram alterados. Verifique a conexão e tente novamente.');
     return;
@@ -368,7 +371,12 @@ function SynapseWorkspace({ user, onLogout }) {
  const [localMigrationData, setLocalMigrationData] = useState(null);
  const [syncError, setSyncError] = useState('');
  const SYNC_DEBOUNCE_MS = 700;
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('clients',user.id,clients.map(c=>({id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar clientes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[clients,loaded,user.id]);
+ useEffect(()=>{ if(!loaded)return; const t=setTimeout(async()=>{try{
+   await syncUserRows('clients',user.id,clients.map(c=>({id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null})));
+   const raw=await storage.get('mindset-clients-meta').catch(()=>null);let meta={};try{meta=raw?JSON.parse(raw.value):{};}catch(_){}
+   const dirty=new Set(Array.isArray(meta.dirty)?meta.dirty.map(String):[]);clients.forEach(c=>dirty.delete(String(c.id)));
+   await storage.set('mindset-clients-meta',JSON.stringify({dirty:[...dirty],deleted:Array.isArray(meta.deleted)?meta.deleted:[]}));
+  }catch(e){window.SynapseLogger?.error('Falha de sincronização.',e);setSyncError('Não foi possível sincronizar clientes.');}},SYNC_DEBOUNCE_MS);return()=>clearTimeout(t);},[clients,loaded,user.id]);
  useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('reminders',user.id,reminders.map(r=>({id:r.id,text:r.text,due:r.due||null,client_id:r.clientId||null,done:!!r.done}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar lembretes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[reminders,loaded,user.id]);
  useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('checkins',user.id,checkins.map(c=>({id:c.id,date:c.date,mood:c.mood,identity:c.identity||'',note:c.note||'',reframe:c.reframe||'',mental_stages:c.mentalStages||{}}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar check-ins.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[checkins,loaded,user.id]);
  useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar configurações.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
@@ -438,34 +446,10 @@ function SynapseWorkspace({ user, onLogout }) {
  setJustSaved(true);
  setTimeout(() => setJustSaved(false), 1800);
  }
- function addClient(name, contact) {
- name=sanitizeInput(name,200); contact=sanitizeInput(contact,500);
- setClients(prev => [...prev, {
- id: uid(), name, contact, stage: 'novo', temp: 'morno',
- lastContact: todayStr(), createdAt: todayStr(), notes: '', lostReason: '', lostTags: [], closedAt: null,
- }]);
- }
- function updateClient(id, patch) {
- const cleanPatch = sanitizeRecord(patch,['name','contact','notes','lostReason']);
- if (Array.isArray(patch.lostTags)) cleanPatch.lostTags = patch.lostTags.map(tag => sanitizeInput(tag,100));
- setClients(prev => prev.map(c => {
- if (c.id !== id)
- return c;
- const next = { ...c, ...cleanPatch };
- if (patch.stage === 'fechado' && !c.closedAt)
- next.closedAt = todayStr();
- if (patch.stage && patch.stage !== 'fechado')
- next.closedAt = null;
- return next;
- }));
- }
- function removeClient(id) {
- const client = clients.find(c => c.id === id);
- const label = client ? `"${client.name}"` : 'este cliente';
- if (!confirm(`Excluir ${label}? Esta ação não pode ser desfeita.`)) return;
- setClients(prev => prev.filter(c => c.id !== id));
- deleteCloudRow('clients', user.id, id).catch(e => { window.SynapseLogger?.error('Falha ao atualizar a nuvem.', e); setSyncError('O cliente foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
- }
+ function updateClientMeta(mutator){storage.get('mindset-clients-meta').then(raw=>{let meta={};try{meta=raw?JSON.parse(raw.value):{};}catch(_){}const next={dirty:Array.isArray(meta.dirty)?meta.dirty.map(String):[],deleted:Array.isArray(meta.deleted)?meta.deleted.map(String):[]};mutator(next);next.dirty=[...new Set(next.dirty)];next.deleted=[...new Set(next.deleted)];storage.set('mindset-clients-meta',JSON.stringify(next)).catch(()=>{});}).catch(()=>{});}
+ function addClient(name,contact){name=sanitizeInput(name,200);contact=sanitizeInput(contact,500);const id=uid();updateClientMeta(meta=>{meta.dirty.push(String(id));meta.deleted=meta.deleted.filter(v=>v!==String(id));});setClients(prev=>[...prev,{id,name,contact,stage:'novo',temp:'morno',lastContact:todayStr(),createdAt:todayStr(),notes:'',lostReason:'',lostTags:[],closedAt:null}]);}
+ function updateClient(id,patch){const cleanPatch=sanitizeRecord(patch,['name','contact','notes','lostReason']);if(Array.isArray(patch.lostTags))cleanPatch.lostTags=patch.lostTags.map(tag=>sanitizeInput(tag,100));updateClientMeta(meta=>{meta.dirty.push(String(id));meta.deleted=meta.deleted.filter(v=>v!==String(id));});setClients(prev=>prev.map(c=>{if(c.id!==id)return c;const next={...c,...cleanPatch};if(patch.stage==='fechado'&&!c.closedAt)next.closedAt=todayStr();if(patch.stage&&patch.stage!=='fechado')next.closedAt=null;return next;}));}
+ function removeClient(id){const client=clients.find(c=>c.id===id);const label=client?`"${client.name}"`:'este cliente';if(!confirm(`Excluir ${label}? Esta ação não pode ser desfeita.`))return;updateClientMeta(meta=>{meta.dirty=meta.dirty.filter(v=>v!==String(id));meta.deleted.push(String(id));});setClients(prev=>prev.filter(c=>c.id!==id));deleteCloudRow('clients',user.id,id).then(async()=>{const raw=await storage.get('mindset-clients-meta').catch(()=>null);let meta={};try{meta=raw?JSON.parse(raw.value):{};}catch(_){}meta.dirty=Array.isArray(meta.dirty)?meta.dirty:[];meta.deleted=Array.isArray(meta.deleted)?meta.deleted:[];meta.deleted=meta.deleted.filter(v=>String(v)!==String(id));await storage.set('mindset-clients-meta',JSON.stringify(meta));}).catch(e=>{window.SynapseLogger?.error('Falha ao atualizar a nuvem.',e);setSyncError('O cliente foi removido da tela, mas não foi possível removê-lo da nuvem.');});}
  function addReminder(text, due, clientId) {
  text=sanitizeInput(text,1000);
  setReminders(prev => [...prev, { id: uid(), text, due, clientId: clientId || null, done: false }]);
