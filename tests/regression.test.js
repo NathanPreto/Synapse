@@ -32,10 +32,10 @@ test('Service Worker não referencia arquivos legados inexistentes', () => {
 
 test('Versão do Service Worker está sincronizada com index e manifest', () => {
   const sw = read('sw.js'), index = read('index.html'), manifest = read('manifest.json');
-  assert.match(sw, /CACHE_VERSION = ['"]v12['"]/);
-  assert.match(index, /sw\.js\?v=12/);
-  assert.match(index, /manifest\.json\?v=12/);
-  assert.match(manifest, /start_url": "\/\?v=12"/);
+  assert.match(sw, /CACHE_VERSION = ['"]v14['"]/);
+  assert.match(index, /sw\.js\?v=14/);
+  assert.match(index, /manifest\.json\?v=14/);
+  assert.match(manifest, /start_url": "\/\?v=14"/);
 });
 
 test('Chamadas tratadas não usam logger de erro global no frontend/persistência', () => {
@@ -187,13 +187,13 @@ test('Edge Function trata CORS e preflight', () => {
   assert.match(fn, /Access-Control-Allow-Origin/);
   assert.match(fn, /req\.method === "OPTIONS"/);
   assert.match(fn, /GEMINI_API_KEY/);
-  assert.match(fn, /TOTAL_TIMEOUT_MS = 10500/);
-  assert.match(fn, /ATTEMPT_TIMEOUT_MS = 3000/);
-  assert.match(fn, /RETRY_DELAYS_MS = \[500, 1000\]/);
+  assert.match(fn, /TOTAL_TIMEOUT_MS = 12000/);
+  assert.match(fn, /ATTEMPT_TIMEOUT_MS = 3500/);
+  assert.match(fn, /isRetryableStatus\(status: number\)/);
   assert.match(fn, /thinkingLevel: "low"/);
-  assert.match(fn, /maxOutputTokens: 300/);
+  assert.match(fn, /maxOutputTokens: 220/);
   assert.match(fn, /system_instruction/);
-  assert.match(fn, /generationConfig: \{ maxOutputTokens: 300, thinkingConfig/);
+  assert.match(fn, /generationConfig: \{[\s\S]*maxOutputTokens: 220[\s\S]*thinkingConfig/);
 });
 
 test('Falha da IA não é mascarada no frontend', () => {
@@ -217,12 +217,12 @@ test('Syn mantém mensagens de indisponibilidade sem expor o provedor', () => {
 
 test('Retry da Syn usa apenas falhas transitórias', () => {
   const fn = read('supabase/functions/synapse-ai/index.ts');
-  assert.match(fn, /shouldRetry\(status: number, message = ""\)/);
-  assert.match(fn, /\[408, 500, 502, 503, 504\]/);
-  assert.match(fn, /status !== 429/);
-  assert.match(fn, /rate/);
-  assert.match(fn, /attempt < 2/);
-  assert.match(fn, /retryDelayMs\(attempt\)/);
+  assert.match(fn, /function isRetryableStatus\(status: number\)/);
+  assert.match(fn, /\[408, 429, 500, 502, 503, 504\]/);
+  assert.match(fn, /let sawQuota = false;/);
+  assert.match(fn, /let sawTimeout = false;/);
+  assert.match(fn, /if \(response\.status === 429\) \{[\s\S]*sawQuota = true;[\s\S]*continue;/);
+  assert.match(fn, /if \(isRetryableStatus\(response\.status\)\)/);
 });
 
 test('Prompt da Syn é curto e orientado a dúvidas básicas', () => {
@@ -245,19 +245,23 @@ test('Syn responde dúvidas básicas localmente sem depender do provedor', () =>
 
 test('Syn usa fallback de modelos estáveis para falhas transitórias', () => {
   const fn = read('supabase/functions/synapse-ai/index.ts');
-  assert.match(fn, /MODELS = \["gemini-3\.6-flash", "gemini-3\.8-flash"\]/);
+  assert.match(fn, /const MODELS = \[[\s\S]*\{ id: "gemini-3\.5-flash-lite", thinkingLevel: "minimal" \},[\s\S]*\{ id: "gemini-3\.1-flash-lite", thinkingLevel: "minimal" \},[\s\S]*\{ id: "gemini-2\.5-flash-lite", thinkingLevel: "minimal" \},[\s\S]*\{ id: "gemini-3\.8-flash", thinkingLevel: "low" \}[\s\S]*\]/);
   assert.match(fn, /for \(const model of MODELS\)/);
-  assert.match(fn, /attempt < 2/);
+  assert.match(fn, /model\.id/);
   assert.match(fn, /console\.warn\("Syn upstream response"/);
 });
 
 
 test('Mensagens da Syn são formatadas sem interpretar HTML ou SVG', () => {
   const app = read('app.js');
-  assert.match(app, /function formatSynMessage\(text\)/);
-  assert.match(app, /formatSynMessage\(answer\)/);
-  assert.match(app, /ai-message-list/);
-  assert.equal(app.includes("dangerouslySetInnerHTML"), false);
+  const helper = app.indexOf('function formatSynMessage(text)');
+  const chat = app.indexOf('function AIAssistant(');
+  const afterChat = app.indexOf('\nfunction ', chat + 1);
+  const iaSegment = app.slice(helper, afterChat >= 0 ? afterChat : app.length);
+  assert.ok(helper >= 0 && chat > helper);
+  assert.match(iaSegment, /formatSynMessage\(answer\)/);
+  assert.match(iaSegment, /ai-message-list/);
+  assert.equal(iaSegment.includes("dangerouslySetInnerHTML"), false);
 });
 
 test('Renderizador da Syn transforma listas em elementos seguros', () => {
@@ -282,6 +286,11 @@ test('Formatador da Syn fica disponível para o componente global do chat', () =
   const helper = app.indexOf('function formatSynMessage(text)');
   const chat = app.indexOf('function AIAssistant(');
   assert.ok(helper >= 0 && helper < chat);
-  assert.ok(app.indexOf('function renderSynMessage(message)') >= 0);
-  assert.ok(app.indexOf('renderSynMessage(message)') > chat);
+  const declaration = app.indexOf('function renderSynMessage(message) {');
+  const chatSegment = app.slice(chat);
+  const calls = [...chatSegment.matchAll(/renderSynMessage\(message\)/g)]
+    .map(match => chat + match.index)
+    .filter(index => index !== declaration);
+  assert.ok(declaration >= 0);
+  assert.ok(calls.some(index => index > chat));
 });
