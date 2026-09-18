@@ -1,7 +1,7 @@
 const { useState, useEffect, useMemo } = React;
 /* ---------- armazenamento multiplataforma e tolerante a bloqueios ---------- */
-const { persistentStorage, storage, safeSessionGet, safeSessionSet } = window.SynapseStorage;
-const { auth, loadSynapseData } = window.SynapseBackend || {};
+const { persistentStorage, storage } = window.SynapseStorage;
+const { auth, loadSynapseData, askAI: backendAskAI } = window.SynapseBackend || {};
 const persistence = window.SynapsePersistence || {};
 
 const { sanitizeInput, sanitizeRecord } = window.SynapseSecurity;
@@ -124,7 +124,7 @@ function GoogleMark() {
 }
 function AuthBrand() {
  return React.createElement('div',{className:'auth-brand'},
-  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),
+  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=12',alt:'Synapse'})),
   React.createElement('div',{className:'auth-brand-copy'},
    React.createElement('div',{className:'auth-title'},'Synapse'),
    React.createElement('div',{className:'auth-subtitle'},'Gestão comercial e mentalidade')
@@ -186,7 +186,7 @@ function AuthScreen() {
  return React.createElement('main',{className:'auth-screen'},
   React.createElement('section',{className:'auth-shell'},
    React.createElement('div',{className:'auth-side'},
-    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),
+    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'standard-logo.svg?v=12',alt:'Synapse'})),
     React.createElement('div',{className:'auth-side-content'},
      React.createElement('div',{className:'auth-kicker'},'Seu espaço comercial'),
      React.createElement('h1',null,'Venda com clareza.\nDecida com presença.'),
@@ -304,9 +304,8 @@ function SynapseWorkspace({ user, onLogout }) {
  const [theme, setTheme] = useState(() => { try { return persistentStorage?.getItem('mental-vendas-theme') || 'dark'; } catch (e) { return 'dark'; } });
  const [excelReview, setExcelReview] = useState(null);
  const [aiOpen, setAiOpen] = useState(false);
- const [aiKey, setAiKey] = useState(() => safeSessionGet('synapse-gemini-key') || '');
  const [aiQuestion, setAiQuestion] = useState('');
- const [aiAnswer, setAiAnswer] = useState('');
+ const [aiMessages, setAiMessages] = useState([]);
  const [aiBusy, setAiBusy] = useState(false);
  const [operationBusy, setOperationBusy] = useState(false);
  const busyTimerRef = React.useRef(null);
@@ -535,16 +534,22 @@ function SynapseWorkspace({ user, onLogout }) {
   setClients(existing); setExcelReview(null); setTab('clientes'); alert(`Importação concluída.\n\nNovos clientes: ${added}\nClientes atualizados: ${updated}`);
  }
  async function askAI() {
-  const key=aiKey.trim(); if(!key){setAiAnswer('Cole sua chave do Gemini para ativar a IA. Ela fica somente nesta sessão do navegador.');return;}
-  safeSessionSet('synapse-gemini-key', key); if(!aiQuestion.trim()) return;
-  setAiBusy(true); setAiAnswer('Pensando...');
+  const question = aiQuestion.trim();
+  if (!question || aiBusy || typeof backendAskAI !== 'function') return;
+  const nextMessages = [...aiMessages, { role:'user', text:question }];
+  setAiQuestion('');
+  setAiMessages(nextMessages);
+  setAiBusy(true);
   try {
-   const context = `Você é o assistente do Synapse. Responda em português do Brasil, de forma prática e curta. Ajude com vendas, CRM, follow-up, mentalidade comercial e dúvidas sobre importação de Excel. Dados atuais: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
-   const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', { method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':key}, body:JSON.stringify({system_instruction:{parts:[{text:context}]},contents:[{parts:[{text:aiQuestion.trim()}]}],generationConfig:{temperature:0.4,maxOutputTokens:500}}) });
-   const data=await response.json(); if(!response.ok) throw new Error(data?.error?.message || 'Não foi possível consultar a IA.');
-   const text=sanitizeInput(data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || 'A IA não retornou uma resposta.', 20000); setAiAnswer(text);
-  } catch(err) { window.SynapseLogger?.warn('Falha ao consultar a IA.', err); setAiAnswer(`Não consegui consultar a IA agora. ${err.message || 'Verifique sua chave e a conexão.'}`); }
-  finally { setAiBusy(false); }
+   const context = `Você é a LURI do Synapse: uma assistente virtual de apoio comercial, prática, acolhedora e objetiva. Responda em português do Brasil. Ajude com vendas, CRM, follow-up, negociação, organização comercial, mentalidade e dúvidas sobre importação de Excel. Não invente dados sobre clientes. Dados agregados atuais do workspace: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
+   const history = nextMessages.slice(-20).map(message => ({ role:message.role, text:message.text }));
+   const result = await backendAskAI({ context, messages:history });
+   const answer = sanitizeInput(result?.answer || 'A IA não retornou uma resposta.', 20000);
+   setAiMessages(prev => [...prev, { role:'model', text:answer }]);
+  } catch(err) {
+   window.SynapseLogger?.warn('Falha ao consultar a IA.', err);
+   setAiMessages(prev => [...prev, { role:'model', text:'Não consegui responder agora. Tente novamente em instantes.' }]);
+  } finally { setAiBusy(false); }
  }
  if (loadError) {
   return React.createElement(Shell, { theme },
@@ -562,7 +567,7 @@ function SynapseWorkspace({ user, onLogout }) {
   return React.createElement(Shell, { theme },
    React.createElement('div', { className: 'cloud-load-state' },
     React.createElement('div',{className:'cloud-load-card loading'},
-     React.createElement('div',{className:'cloud-load-spinner'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),
+     React.createElement('div',{className:'cloud-load-spinner'},React.createElement('img',{src:'standard-logo.svg?v=12',alt:'Synapse'})),
      React.createElement('h2',null,'Carregando seu espaço'),
      React.createElement('p',null,'Buscando seus dados com segurança.')
     )
@@ -588,7 +593,7 @@ function SynapseWorkspace({ user, onLogout }) {
   migrationRequested && React.createElement(MigrationModal,{onImport:migrateLocalData,onSkip:()=>setMigrationRequested(false)}),
   excelReview && React.createElement(ExcelReviewModal, { review: excelReview, setReview: setExcelReview, onImport: completeExcelImport }),
   calmOpen && React.createElement(CalmMode, { onClose: () => setCalmOpen(false) }),
-  aiOpen && React.createElement(AIAssistant, { keyValue: aiKey, setKeyValue: setAiKey, question: aiQuestion, setQuestion: setAiQuestion, answer: aiAnswer, busy: aiBusy, onAsk: askAI, onClose: () => setAiOpen(false) })
+  aiOpen && React.createElement(AIAssistant, { messages: aiMessages, question: aiQuestion, setQuestion: setAiQuestion, busy: aiBusy, onAsk: askAI, onClear: () => { setAiMessages([]); setAiQuestion(''); }, onClose: () => setAiOpen(false) })
  );
 }
 function Shell({ children, theme }) {
@@ -1014,24 +1019,47 @@ function ExcelReviewModal({ review, setReview, onImport }) {
   )
  );
 }
-function AIAssistant({keyValue,setKeyValue,question,setQuestion,answer,busy,onAsk,onClose}) {
+function AIAssistant({messages,question,setQuestion,busy,onAsk,onClose,onClear}) {
+ const endRef = React.useRef(null);
+ useEffect(() => { endRef.current?.scrollIntoView?.({ behavior:'smooth', block:'end' }); }, [messages.length, busy]);
+ const submit = e => { e.preventDefault(); onAsk(); };
  return React.createElement('div',{className:'modal-backdrop'},
-  React.createElement('div',{className:'smart-modal ai-modal'},
-   React.createElement('div',{className:'flex items-start justify-between gap-4'},
-    React.createElement('div',null,
-     React.createElement('div',{className:'flex items-center gap-2 text-lg font-semibold'},React.createElement(Sparkles,{size:18}),' Assistente Synapse'),
-     React.createElement('div',{className:'text-xs mt-1',style:{color:'var(--muted)'}},'IA opcional com Gemini')
+  React.createElement('section',{className:'smart-modal ai-modal ai-chat-modal','aria-label':'Assistente Synapse'},
+   React.createElement('header',{className:'ai-chat-header'},
+    React.createElement('div',{className:'ai-chat-title'},
+     React.createElement('div',{className:'ai-avatar'},React.createElement(Sparkles,{size:16})),
+     React.createElement('div',null,
+      React.createElement('div',{className:'ai-chat-name'},'LURI'),
+      React.createElement('div',{className:'ai-chat-status'},'Assistente Synapse · online')
+     )
     ),
-    React.createElement('button',{onClick:onClose,className:'p-2 rounded',style:{color:'var(--muted)'}},React.createElement(X,{size:16}))
+    React.createElement('div',{className:'ai-chat-actions'},
+     React.createElement('button',{type:'button',onClick:onClear,className:'ai-chat-action',title:'Nova conversa'},'Nova conversa'),
+     React.createElement('button',{type:'button',onClick:onClose,className:'ai-chat-action','aria-label':'Fechar'},React.createElement(X,{size:17}))
+    )
    ),
-   React.createElement('div',{className:'mt-4 p-3 rounded text-xs',style:{background:'var(--surface2)',border:'1px solid var(--border)',color:'var(--muted)'}},'A chave fica somente nesta sessão do navegador. Para uso público ou compartilhado, o ideal é colocar a chave em um backend seguro.'),
-   React.createElement('input',{type:'password',value:keyValue,onChange:e=>setKeyValue(e.target.value),placeholder:'Cole sua chave Gemini aqui',className:'w-full p-3 rounded mt-3 text-sm',style:{background:'var(--bg)',color:'var(--text)',border:'1px solid var(--border)'}}),
-   React.createElement('textarea',{value:question,onChange:e=>setQuestion(e.target.value),placeholder:'Ex.: Como devo abordar um lead que parou de responder?',rows:4,className:'w-full p-3 rounded mt-3 text-sm',style:{background:'var(--bg)',color:'var(--text)',border:'1px solid var(--border)',resize:'vertical'}}),
-   React.createElement('button',{onClick:onAsk,disabled:busy||!question.trim(),className:'w-full p-3 rounded mt-3 text-sm font-semibold',style:{background:busy?'var(--surface2)':'var(--ember)',color:busy?'var(--muted)':'var(--on-accent)'}},busy?'Consultando...':'Perguntar à IA'),
-   answer && React.createElement('div',{className:'mt-4 p-4 rounded text-sm whitespace-pre-wrap',style:{background:'var(--surface2)',border:'1px solid var(--border)',color:'var(--text)',lineHeight:1.6}},answer)
+   React.createElement('div',{className:'ai-chat-body'},
+    messages.length===0 && React.createElement('div',{className:'ai-welcome'},
+     React.createElement('div',{className:'ai-welcome-avatar'},React.createElement(Sparkles,{size:20})),
+     React.createElement('h2',null,'Como posso te ajudar?'),
+     React.createElement('p',null,'Posso pensar com você sobre seus leads, follow-ups, negociação e rotina comercial.')
+    ),
+    messages.map((message,index)=>React.createElement('div',{key:index,className:'ai-message-row '+(message.role==='user'?'user':'assistant')},
+     message.role==='model' && React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),
+     React.createElement('div',{className:'ai-message-bubble'},message.text)
+    )),
+    busy && React.createElement('div',{className:'ai-message-row assistant'},
+     React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),
+     React.createElement('div',{className:'ai-message-bubble ai-typing'},React.createElement('span'),React.createElement('span'),React.createElement('span'))
+    ),
+    React.createElement('div',{ref:endRef})
+   ),
+   React.createElement('form',{className:'ai-chat-composer',onSubmit:submit},
+    React.createElement('textarea',{value:question,onChange:e=>setQuestion(e.target.value),onKeyDown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit(e);}},placeholder:'Escreva uma mensagem...',rows:1,disabled:busy,autoFocus:true}),
+    React.createElement('button',{type:'submit',disabled:busy||!question.trim(),className:'ai-send','aria-label':'Enviar'},React.createElement('span',null,'↑'))
+   )
   )
- );
-}
+ );}
 function WorkspaceHeader({tab,setTab,theme,toggleTheme,user,onLogout}) {
  const labels={painel:'Seu dia, em movimento.',mental:'Clareza para seguir em frente.',clientes:'Clientes e oportunidades.',lembretes:'Nada importante passa despercebido.',foco:'Foco no que move o dia.'};
  const now=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
@@ -1081,7 +1109,7 @@ function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, 
   React.createElement('input',{ref:excelInputRef,type:'file',accept:'.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv',className:'hidden',onChange:e=>{const f=e.target.files?.[0];if(f)importExcel(f);e.target.value='';}})
  );
  return React.createElement('aside',{ref:sidebarRef,className:'synapse-sidebar'+(sidebarOpen?' is-open':''),onMouseEnter:openSidebar,onMouseLeave:closeSidebarIfUnfocused,onFocusCapture:openSidebar,onBlurCapture:closeSidebarIfUnfocused, 'aria-label':'Navegação principal'},
-  React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
+  React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=12',alt:'Synapse'})),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
   React.createElement('nav',{className:'sidebar-nav'},items.map(({key,label,IconC})=>React.createElement('button',{key,onClick:()=>setTab(key),className:tab===key?'active':'',title:label},React.createElement(IconC,{size:17}),React.createElement('span',null,label)))),
   React.createElement('div',{className:'sidebar-bottom'},React.createElement('div',{className:'sidebar-tools'},React.createElement('div',{className:'flex items-center gap-1.5 text-sm',style:{color:streak>0?'var(--ember)':'var(--muted)'}},React.createElement(Flame,{size:16,strokeWidth:2}),React.createElement('span',null,streak,' ',streak===1?'dia':'dias')),backupButtons),React.createElement('div',{className:'account-name'},React.createElement('span',{className:'account-avatar'},(user?.email||'S').slice(0,1).toUpperCase()),React.createElement('div',null,React.createElement('small',null,'Conta pessoal'),React.createElement('b',null,user?.email||'Synapse')),React.createElement('button',{onClick:onLogout,className:'top-logout'},'Sair')))
  );

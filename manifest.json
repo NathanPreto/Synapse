@@ -2,7 +2,7 @@
   "name": "Synapse — Gestão comercial e mentalidade",
   "short_name": "Synapse",
   "description": "CRM de vendas + mentalidade comercial, com autenticação e persistência em nuvem.",
-  "start_url": "/?v=11",
+  "start_url": "/?v=12",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

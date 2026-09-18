@@ -10,6 +10,7 @@
     syncUserRows: provider?.syncUserRows,
     deleteCloudRow: provider?.deleteCloudRow,
     syncSettings: provider?.syncSettings,
-    loadSynapseData: provider?.loadSynapseData
+    loadSynapseData: provider?.loadSynapseData,
+    askAI: provider?.askAI
   };
 })();

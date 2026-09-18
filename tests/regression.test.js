@@ -32,7 +32,7 @@ test('Service Worker não referencia arquivos legados inexistentes', () => {
 
 test('Versão do Service Worker está sincronizada com index e manifest', () => {
   const sw = read('sw.js'), index = read('index.html'), manifest = read('manifest.json');
-  assert.match(sw, /CACHE_VERSION = ['"]v11['"]/);
+  assert.match(sw, /CACHE_VERSION = ['"]v12['"]/);
   assert.match(index, /sw\.js\?v=11/);
   assert.match(index, /manifest\.json\?v=11/);
   assert.match(manifest, /start_url": "\/\?v=11"/);
@@ -43,9 +43,24 @@ test('Chamadas tratadas não usam logger de erro global no frontend/persistênci
   assert.equal(read('services/persistence.js').includes('SynapseLogger?.error'), false);
 });
 
-test('Gemini direto permanece explicitamente isolado como dívida da Etapa 5', () => {
-  assert.match(read('app.js'), /generativelanguage\.googleapis\.com/);
-  assert.match(read('app.js'), /synapse-gemini-key/);
+test('Gemini não é mais chamado nem armazenado no navegador', () => {
+  const app = read('app.js');
+  const backend = read('backend.js');
+  const supabase = read('services/supabase.js');
+  assert.equal(app.includes('generativelanguage.googleapis.com'), false);
+  assert.equal(app.includes('synapse-gemini-key'), false);
+  assert.equal(app.includes('x-goog-api-key'), false);
+  assert.match(backend, /askAI/);
+  assert.match(supabase, /functions\.invoke\(['"]synapse-ai['"]/);
+});
+test('Chat de IA tem histórico, envio e estado de digitação', () => {
+  const app = read('app.js');
+  const styles = read('styles.css');
+  assert.match(app, /aiMessages/);
+  assert.match(app, /onKeyDown/);
+  assert.match(app, /ai-chat-composer/);
+  assert.match(app, /Nova conversa/);
+  assert.match(styles, /\.ai-chat-modal/);
 });
 
 function makeRuntimeContext() {

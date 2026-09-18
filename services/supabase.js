@@ -31,6 +31,17 @@
       if (error) throw error;
     } finally { window.SynapseFeedback?.end(); }
   }
+  async function askAI(payload) {
+    const api = requireClient();
+    const body = payload && typeof payload === 'object' ? payload : {};
+    window.SynapseFeedback?.start('Consultando a IA');
+    try {
+      const { data, error } = await api.functions.invoke('synapse-ai', { body });
+      if (error) throw error;
+      if (!data?.answer) throw new Error('A IA não retornou uma resposta.');
+      return { answer: String(data.answer) };
+    } finally { window.SynapseFeedback?.end(); }
+  }
   async function loadSynapseData(userId) {
     const api = requireClient();
     window.SynapseFeedback?.start('Carregando seus dados');
@@ -52,5 +63,5 @@
       };
     } finally { window.SynapseFeedback?.end(); }
   }
-  window.SynapseSupabase = { auth: client?.auth || null, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData };
+  window.SynapseSupabase = { auth: client?.auth || null, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData, askAI };
 })();
