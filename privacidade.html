@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#161816"><title>Synapse | Política de Privacidade</title><link rel="stylesheet" href="styles.css"><style>
+:root{color-scheme:light dark}
+body{margin:0;background:var(--bg,#f5f5f2);color:var(--text,#171917);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.legal-page{min-height:100dvh;box-sizing:border-box;padding:clamp(24px,5vw,64px) 20px}
+.legal-shell{width:min(820px,100%);margin:0 auto}
+.legal-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}
+.legal-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;font-weight:800}
+.legal-brand img{width:40px;height:40px;object-fit:contain;background:#fff;border-radius:10px}
+.legal-back{color:var(--muted,#6d726d);font-size:13px;text-decoration:none}
+.legal-back:hover{text-decoration:underline;color:var(--text,#171917)}
+.legal-card{background:var(--surface,#fff);border:1px solid var(--border,#dedfdc);border-radius:20px;padding:clamp(24px,5vw,44px);box-shadow:0 12px 40px rgba(22,24,22,.06)}
+.legal-eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--teal,#16857b);margin:0 0 8px}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(30px,5vw,44px);line-height:1.08;letter-spacing:-.035em;margin:0}
+.legal-updated{margin:10px 0 28px;color:var(--muted,#6d726d);font-size:12px}
+h2{font-size:17px;line-height:1.3;margin:28px 0 9px}
+p,li{font-size:14px;line-height:1.7}
+p{margin:0 0 10px}
+ul{padding-left:22px;margin:8px 0 14px}
+a{color:var(--teal,#16857b)}
+.legal-note{padding:12px 14px;border-radius:12px;background:var(--surface2,#f1f2ef);border:1px solid var(--border,#dedfdc)}
+.legal-footer{margin-top:18px;text-align:center;color:var(--muted,#6d726d);font-size:12px}
+@media(max-width:560px){.legal-page{padding:18px 12px}.legal-top{align-items:flex-start}.legal-card{border-radius:16px;padding:22px 18px}}
+@media(prefers-color-scheme:dark){body{--bg:#111311;--text:#f0f1ee;--surface:#191c19;--surface2:#222622;--border:#343934;--muted:#a1a7a1;--teal:#55b8ac}.legal-card{box-shadow:none}.legal-brand img{background:#fff}}
+</style></head>
+<body><main class="legal-page"><div class="legal-shell">
+<header class="legal-top"><a class="legal-brand" href="./"><img src="standard-logo.svg?v=12" alt="Synapse"><span>Synapse</span></a><a class="legal-back" href="./">Voltar ao Synapse</a></header>
+<article class="legal-card"><p class="legal-eyebrow">Transparência</p><h1>Política de Privacidade</h1><p class="legal-updated">Última atualização: 18 de setembro de 2026</p>
+<p>Esta Política explica, em linguagem simples, quais dados o Synapse trata, por que eles são usados, onde são armazenados e como você pode solicitar informações ou a exclusão da sua conta.</p>
+<h2>1. Dados que tratamos</h2>
+<ul><li><strong>Conta:</strong> e-mail e, quando informado no cadastro ou disponibilizado pelo provedor de login, nome e imagem de perfil.</li><li><strong>Dados do aplicativo:</strong> informações que você registra no CRM, como clientes, contatos, etapas, observações, lembretes e registros de check-in/mentalidade, além de preferências do aplicativo.</li><li><strong>Uso da Syn:</strong> quando você usa o assistente de IA, sua mensagem e o contexto necessário para responder são enviados ao backend do Synapse e ao provedor Gemini. O histórico da conversa do chat não é salvo como um histórico permanente no banco de dados do Synapse.</li><li><strong>Erros técnicos:</strong> o aplicativo registra erros no console do navegador para diagnóstico. Não há, no código atual, um serviço remoto de telemetria de uso geral configurado.</li></ul>
+<h2>2. Finalidades</h2>
+<p>Usamos esses dados para autenticar sua conta, disponibilizar e sincronizar os recursos do Synapse, manter suas preferências, permitir recuperação de acesso, proteger a operação e responder às solicitações feitas à Syn.</p>
+<h2>3. Armazenamento e processamento</h2>
+<p>Os dados da conta e do aplicativo são armazenados no ambiente Supabase associado ao Synapse. O aplicativo também mantém dados de sessão, cache e fila de sincronização no armazenamento local do navegador para permitir carregamento e uso mais resilientes. Esses dados locais podem permanecer no dispositivo até serem removidos pelo navegador ou pelo próprio usuário.</p>
+<h2>4. Serviços de terceiros</h2>
+<ul><li><strong>Supabase:</strong> autenticação e armazenamento dos dados do aplicativo.</li><li><strong>Google:</strong> quando você escolhe entrar com Google, a autenticação passa pelo Google e os dados de perfil disponibilizados pelo provedor podem ser usados para criar sua conta no Synapse.</li><li><strong>Google Gemini:</strong> fornece o modelo de IA usado pela Syn. As mensagens enviadas à Syn são encaminhadas ao serviço para geração da resposta.</li><li><strong>Vercel e serviços de CDN:</strong> podem participar da hospedagem e entrega da aplicação e de bibliotecas públicas carregadas pelo navegador.</li></ul>
+<h2>5. Cookies e armazenamento do navegador</h2>
+<p>O Synapse não usa cookies próprios para registrar preferências de marketing. O aplicativo usa <strong>localStorage</strong> e <strong>sessionStorage</strong> quando disponíveis para cache, fila de sincronização e dados auxiliares. O provedor de autenticação pode usar mecanismos de armazenamento necessários à manutenção da sessão.</p>
+<h2>6. Seus direitos e solicitações</h2>
+<p>Você pode solicitar informações sobre os dados associados à sua conta, correção de dados, portabilidade do conteúdo disponível pelo recurso de backup e exclusão da conta e dos dados associados, observadas as obrigações legais eventualmente aplicáveis. Para solicitar atendimento, escreva para <a href="mailto:suport.synapse@gmail.com">suport.synapse@gmail.com</a>.</p>
+<div class="legal-note"><strong>Exclusão:</strong> o Synapse deverá oferecer uma forma de excluir a conta dentro do aplicativo. Quando a exclusão for solicitada, o objetivo é remover os registros associados à conta do ambiente de dados do Synapse e encerrar o acesso.</div>
+<h2>7. Segurança</h2>
+<p>O Synapse aplica autenticação, políticas de acesso por usuário no banco de dados e mecanismos de persistência local. Nenhum serviço online pode garantir segurança absoluta; mantenha suas credenciais protegidas e use o backup com cuidado.</p>
+<h2>8. Alterações desta política</h2>
+<p>Esta política pode ser atualizada para refletir mudanças no produto, nos serviços utilizados ou em requisitos legais. A data de atualização será revisada quando houver alteração relevante.</p>
+</article><div class="legal-footer">Dúvidas: <a href="mailto:suport.synapse@gmail.com">suport.synapse@gmail.com</a></div>
+</div></main></body></html>
