@@ -541,7 +541,7 @@ function SynapseWorkspace({ user, onLogout }) {
   setAiMessages(nextMessages);
   setAiBusy(true);
   try {
-   const context = `Você é a LURI do Synapse: uma assistente virtual de apoio comercial, prática, acolhedora e objetiva. Responda em português do Brasil. Ajude com vendas, CRM, follow-up, negociação, organização comercial, mentalidade e dúvidas sobre importação de Excel. Não invente dados sobre clientes. Dados agregados atuais do workspace: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
+   const context = `Você é a Syn do Synapse: uma assistente virtual de apoio comercial, prática, acolhedora e objetiva. Responda em português do Brasil. Ajude com vendas, CRM, follow-up, negociação, organização comercial, mentalidade e dúvidas sobre importação de Excel. Não invente dados sobre clientes. Dados agregados atuais do workspace: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
    const history = nextMessages.slice(-20).map(message => ({ role:message.role, text:message.text }));
    const result = await backendAskAI({ context, messages:history });
    const answer = sanitizeInput(result?.answer || 'A IA não retornou uma resposta.', 20000);
@@ -581,7 +581,7 @@ function SynapseWorkspace({ user, onLogout }) {
   React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange:setSidebarOpen }),
   React.createElement('main',{className:'synapse-main'},
   React.createElement(WorkspaceHeader,{tab,setTab,theme,toggleTheme,user,onLogout}),
-  React.createElement('button', { onClick: () => setAiOpen(true), className: 'ai-fab', title: 'Assistente de IA' }, React.createElement(Sparkles, { size: 17 }), ' IA'),
+  React.createElement('button', { onClick: () => setAiOpen(true), className: 'ai-fab', title: 'Abrir Syn' }, React.createElement(Sparkles, { size: 17 }), ' Syn'),
   React.createElement('div', { className: 'workspace-content px-4 sm:px-6 lg:px-8 py-6 w-full max-w-none' },
    tab === 'painel' && React.createElement(Painel, { streak, todayCheckin, clients, followUps, pendingReminders, correlation, lossReasons, dailyFocus, pinnedPhrase, goTo: setTab, onCalm: () => setCalmOpen(true) }),
    tab === 'mental' && React.createElement(Mental, { checkins, todayCheckin, saveCheckin, deleteCheckin, justSaved, desidentificationEntries, setDesidentificationEntries, pinnedPhrase, setPinnedPhrase }),
@@ -1029,7 +1029,7 @@ function AIAssistant({messages,question,setQuestion,busy,onAsk,onClose,onClear})
     React.createElement('div',{className:'ai-chat-title'},
      React.createElement('div',{className:'ai-avatar'},React.createElement(Sparkles,{size:16})),
      React.createElement('div',null,
-      React.createElement('div',{className:'ai-chat-name'},'LURI'),
+      React.createElement('div',{className:'ai-chat-name'},'Syn'),
       React.createElement('div',{className:'ai-chat-status'},'Assistente Synapse · online')
      )
     ),

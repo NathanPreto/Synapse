@@ -37,7 +37,16 @@
     window.SynapseFeedback?.start('Consultando a IA');
     try {
       const { data, error } = await api.functions.invoke('synapse-ai', { body });
-      if (error) throw error;
+      if (error) {
+        let detail = '';
+        try {
+          if (error.context?.json) {
+            const payload = await error.context.json();
+            detail = payload?.error || payload?.message || '';
+          }
+        } catch (_) {}
+        throw new Error(detail || error.message || 'Não foi possível consultar a IA.');
+      }
       if (!data?.answer) throw new Error('A IA não retornou uma resposta.');
       return { answer: String(data.answer) };
     } finally { window.SynapseFeedback?.end(); }

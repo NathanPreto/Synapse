@@ -1,11 +1,20 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+};
+
 const MODEL = "gemini-3.8-flash";
 const MAX_MESSAGES = 20;
 const MAX_TEXT_LENGTH = 4000;
 const MAX_CONTEXT_LENGTH = 5000;
 const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
 
 function normalizeMessages(value: unknown) {
   if (!Array.isArray(value) || value.length === 0 || value.length > MAX_MESSAGES) throw new Error("Histórico de conversa inválido.");
@@ -18,6 +27,7 @@ function normalizeMessages(value: unknown) {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) return json({ error: "A IA não está configurada no servidor." }, 503);

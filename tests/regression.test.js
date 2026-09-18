@@ -60,6 +60,8 @@ test('Chat de IA tem histórico, envio e estado de digitação', () => {
   assert.match(app, /onKeyDown/);
   assert.match(app, /ai-chat-composer/);
   assert.match(app, /Nova conversa/);
+  assert.match(app, /'Syn'/);
+  assert.equal(app.includes("'LURI'"), false);
   assert.match(styles, /\.ai-chat-modal/);
 });
 
@@ -176,3 +178,10 @@ function makePersistenceContext(online) {
   console.log(`\\nResumo: ${results.length - failed.length}/${results.length} testes passaram.`);
   if (failed.length) process.exitCode = 1;
 })();
+
+test('Edge Function trata CORS e preflight', () => {
+  const fn = read('supabase/functions/synapse-ai/index.ts');
+  assert.match(fn, /Access-Control-Allow-Origin/);
+  assert.match(fn, /req\.method === "OPTIONS"/);
+  assert.match(fn, /GEMINI_API_KEY/);
+});
