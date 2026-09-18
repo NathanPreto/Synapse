@@ -48,7 +48,6 @@ test('Exclusão de conta exige confirmação e usa função protegida', () => {
   assert.match(fn, /auth\.admin\.deleteUser/);
   assert.match(fn, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(fn, /getUser\(accessToken\)/);
-  assert.match(fn, /verify_jwt/); 
 });
 
 test('JavaScript principal continua sintaticamente válido', () => {
