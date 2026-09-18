@@ -357,6 +357,7 @@ function SynapseWorkspace({ user, onLogout }) {
  const [localMigrationData,setLocalMigrationData]=useState(null);
  const [syncError,setSyncError]=useState('');
  useEffect(()=>{if(!syncError)return;const t=setTimeout(()=>setSyncError(''),5000);return()=>clearTimeout(t);},[syncError]);
+ useEffect(()=>{const onOnline=()=>persistence.flush(user.id).catch(()=>{});window.addEventListener('online',onOnline);return()=>window.removeEventListener('online',onOnline);},[user.id]);
  async function migrateLocalData(){
   const data = localMigrationData;
   if(!data) { setMigrationRequested(false); return; }
