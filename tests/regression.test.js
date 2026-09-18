@@ -275,3 +275,13 @@ test('Renderização da Syn possui fallback seguro contra mensagens malformadas'
   assert.match(app, /catch \(_\)/);
   assert.match(app, /renderSynMessage\(message\)/);
 });
+
+
+test('Formatador da Syn fica disponível para o componente global do chat', () => {
+  const app = read('app.js');
+  const helper = app.indexOf('function formatSynMessage(text)');
+  const chat = app.indexOf('function AIAssistant(');
+  assert.ok(helper >= 0 && helper < chat);
+  assert.ok(app.indexOf('function renderSynMessage(message)') >= 0);
+  assert.ok(app.indexOf('renderSynMessage(message)') > chat);
+});

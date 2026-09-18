@@ -533,41 +533,6 @@ function SynapseWorkspace({ user, onLogout }) {
   if (!confirm(`Foram encontrados ${imported.length} clientes.\n\nNovos: ${added}\nAtualizados: ${updated}\n\nOs clientes serão adicionados ou atualizados sem apagar os atuais. Continuar?`)) return;
   setClients(existing); setExcelReview(null); setTab('clientes'); alert(`Importação concluída.\n\nNovos clientes: ${added}\nClientes atualizados: ${updated}`);
  }
- function formatSynMessage(text) {
-  const value = String(text || '').replace(/\r\n?/g,'\n').trim();
-  if (!value) return [{ type:'text', text:'' }];
-  const lines = value.split('\n');
-  const blocks = [];
-  let list = [];
-  const flushList = () => {
-   if (list.length) { blocks.push({ type:'list', items:list }); list=[]; }
-  };
-  lines.forEach(line => {
-   const clean = line.trim();
-   if (!clean) { flushList(); return; }
-   const listMatch = clean.match(/^(?:[-*]|\d+[.)])\s+(.+)$/);
-   if (listMatch) { list.push(listMatch[1]); return; }
-   flushList();
-   blocks.push({ type:'text', text:clean });
-  });
-  flushList();
-  return blocks;
- }
- function renderSynMessage(message) {
-  try {
-   const blocks = Array.isArray(message?.blocks) && message.blocks.length ? message.blocks : formatSynMessage(message?.text);
-   return blocks.map((block,blockIndex) => {
-    if (block?.type === 'list' && Array.isArray(block.items)) {
-     return React.createElement('ol',{key:blockIndex,className:'ai-message-list'},
-      block.items.map((item,itemIndex)=>React.createElement('li',{key:itemIndex},String(item || '')))
-     );
-    }
-    return React.createElement('p',{key:blockIndex},String(block?.text || ''));
-   });
-  } catch (_) {
-   return React.createElement('p',null,String(message?.text || ''));
-  }
- }
  function getSynLocalAnswer(question) {
   const normalized = question.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   if (/^(oi|ola|bom dia|boa tarde|boa noite|hey|hello)\b/.test(normalized)) return 'Olá! Eu sou a Syn. Posso tirar dúvidas básicas sobre o Synapse e sobre organização comercial.';
@@ -1086,6 +1051,41 @@ function ExcelReviewModal({ review, setReview, onImport }) {
   )
  );
 }
+ function formatSynMessage(text) {
+  const value = String(text || '').replace(/\r\n?/g,'\n').trim();
+  if (!value) return [{ type:'text', text:'' }];
+  const lines = value.split('\n');
+  const blocks = [];
+  let list = [];
+  const flushList = () => {
+   if (list.length) { blocks.push({ type:'list', items:list }); list=[]; }
+  };
+  lines.forEach(line => {
+   const clean = line.trim();
+   if (!clean) { flushList(); return; }
+   const listMatch = clean.match(/^(?:[-*]|\d+[.)])\s+(.+)$/);
+   if (listMatch) { list.push(listMatch[1]); return; }
+   flushList();
+   blocks.push({ type:'text', text:clean });
+  });
+  flushList();
+  return blocks;
+ }
+ function renderSynMessage(message) {
+  try {
+   const blocks = Array.isArray(message?.blocks) && message.blocks.length ? message.blocks : formatSynMessage(message?.text);
+   return blocks.map((block,blockIndex) => {
+    if (block?.type === 'list' && Array.isArray(block.items)) {
+     return React.createElement('ol',{key:blockIndex,className:'ai-message-list'},
+      block.items.map((item,itemIndex)=>React.createElement('li',{key:itemIndex},String(item || '')))
+     );
+    }
+    return React.createElement('p',{key:blockIndex},String(block?.text || ''));
+   });
+  } catch (_) {
+   return React.createElement('p',null,String(message?.text || ''));
+  }
+ }
 function AIAssistant({messages,question,setQuestion,busy,onAsk,onClose,onClear}) {
  const endRef = React.useRef(null);
  useEffect(() => { endRef.current?.scrollIntoView?.({ behavior:'smooth', block:'end' }); }, [messages.length, busy]);
