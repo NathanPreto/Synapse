@@ -1,7 +1,8 @@
 const { useState, useEffect, useMemo } = React;
 /* ---------- armazenamento multiplataforma e tolerante a bloqueios ---------- */
 const { persistentStorage, storage, safeSessionGet, safeSessionSet } = window.SynapseStorage;
-const { auth, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData } = window.SynapseBackend;
+const { auth, loadSynapseData } = window.SynapseBackend;
+const persistence = window.SynapsePersistence;
 const { sanitizeInput, sanitizeRecord } = window.SynapseSecurity;
 const LOST_TAGS = ['Preço','Timing','Escolheu Concorrente','Sumiu / Sem Resposta','Fora do Perfil','Sem Orçamento','Sem Necessidade','Outro'];
 
@@ -333,65 +334,35 @@ function SynapseWorkspace({ user, onLogout }) {
   setLoadError('');
   (async () => {
    try {
-     const [cloud, c1, c2, c3, c4, c5, metaRaw] = await Promise.all([
-      loadSynapseData(user.id), storage.get('mindset-checkins').catch(()=>null), storage.get('mindset-clients').catch(()=>null),
-      storage.get('mindset-reminders').catch(()=>null), storage.get('mental-vendas-desidentificacao').catch(()=>null),
-      storage.get('mental-vendas-templates').catch(()=>null), storage.get('mindset-clients-meta').catch(()=>null)
-     ]);
-     if (!active) return;
-     const localClients=c2?JSON.parse(c2.value):[], localReminders=c3?JSON.parse(c3.value):[], localCheckins=c1?JSON.parse(c1.value):[];
-     const localMental=c4?JSON.parse(c4.value):{}, localTemplates=c5?JSON.parse(c5.value):[];
-     let meta={}; try{meta=metaRaw?JSON.parse(metaRaw.value):{};}catch(_){}
-     const dirtyIds=new Set(Array.isArray(meta.dirty)?meta.dirty.map(String):[]), deletedIds=new Set(Array.isArray(meta.deleted)?meta.deleted.map(String):[]);
-     if(cloud.hasCloudData){
-      const localById=new Map(localClients.map(c=>[String(c.id),c])), cloudById=new Map(cloud.clients.map(c=>[String(c.id),c]));
-      const mergedClients=cloud.clients.filter(c=>!deletedIds.has(String(c.id))).map(c=>dirtyIds.has(String(c.id))&&localById.has(String(c.id))?localById.get(String(c.id)):c);
-      localClients.forEach(c=>{const id=String(c.id);if(!cloudById.has(id)&&!deletedIds.has(id))mergedClients.push(c);});
-      setClients(mergedClients); setReminders(cloud.reminders.length?cloud.reminders:localReminders); setCheckins(cloud.checkins.length?cloud.checkins:localCheckins);
-      setDesidentificationEntries(cloud.entries.length?cloud.entries:(localMental.entries||[])); setPinnedPhrase(cloud.pinned||localMental.pinned||null); setTemplates(cloud.templates.length?cloud.templates:localTemplates);
-      if(cloud.theme)setTheme(cloud.theme);
-     }else if(localClients.length||localReminders.length||localCheckins.length||localTemplates.length||localMental.entries?.length||localMental.pinned){
-      setLocalMigrationData({clients:localClients,reminders:localReminders,checkins:localCheckins,entries:localMental.entries||[],pinned:localMental.pinned||null,templates:localTemplates}); setMigrationRequested(true);
-     }
-    } catch(e) {
-    window.SynapseLogger?.error('Falha ao carregar Synapse.', e);
-    if (active) setLoadError('Não foi possível carregar seus dados da nuvem. Seus dados não foram alterados. Verifique a conexão e tente novamente.');
-    return;
+    const cloud=await loadSynapseData(user.id);
+    if(!active)return;
+    const pending=await persistence.getPending(user.id);
+    const resolved=persistence.applyPending(cloud,pending);
+    if(resolved.hasCloudData||pending.length){setClients(resolved.clients);setReminders(resolved.reminders);setCheckins(resolved.checkins);setDesidentificationEntries(resolved.entries);setPinnedPhrase(resolved.pinned);setTemplates(resolved.templates);if(resolved.theme)setTheme(resolved.theme);}
+    else {const [c1,c2,c3,c4,c5]=await Promise.all([storage.get('mindset-checkins').catch(()=>null),storage.get('mindset-clients').catch(()=>null),storage.get('mindset-reminders').catch(()=>null),storage.get('mental-vendas-desidentificacao').catch(()=>null),storage.get('mental-vendas-templates').catch(()=>null)]);const localClients=c2?JSON.parse(c2.value):[],localReminders=c3?JSON.parse(c3.value):[],localCheckins=c1?JSON.parse(c1.value):[],localMental=c4?JSON.parse(c4.value):{},localTemplates=c5?JSON.parse(c5.value):[];if(localClients.length||localReminders.length||localCheckins.length||localTemplates.length||localMental.entries?.length||localMental.pinned){setLocalMigrationData({clients:localClients,reminders:localReminders,checkins:localCheckins,entries:localMental.entries||[],pinned:localMental.pinned||null,templates:localTemplates});setMigrationRequested(true);}}
+    if(pending.length)persistence.flush(user.id).catch(()=>{});
+   } catch(e) {
+    window.SynapseLogger?.error('Falha ao carregar Synapse.',e);
+    const cached=await persistence.readCache(user.id).catch(()=>null),pending=await persistence.getPending(user.id).catch(()=>[]);
+    if(active&&cached){const resolved=persistence.applyPending(cached,pending);setClients(resolved.clients);setReminders(resolved.reminders);setCheckins(resolved.checkins);setDesidentificationEntries(resolved.entries);setPinnedPhrase(resolved.pinned);setTemplates(resolved.templates);if(resolved.theme)setTheme(resolved.theme);setSyncError('Sem conexão com a nuvem. Suas alterações ficam na fila e serão sincronizadas quando a conexão voltar.');}
+    else if(active){setLoadError('Não foi possível carregar seus dados da nuvem. Seus dados não foram alterados. Verifique a conexão e tente novamente.');return;}
    }
-   if(active) setLoaded(true);
+   if(active)setLoaded(true);
   })();
-  return ()=>{active=false;};
- }, [user.id, loadNonce]);
- useEffect(() => { if(loaded) storage.set('mindset-checkins',JSON.stringify(checkins)).catch(()=>{}); },[checkins,loaded]);
- useEffect(() => { if(loaded) storage.set('mindset-clients',JSON.stringify(clients)).catch(()=>{}); },[clients,loaded]);
- useEffect(() => { if(loaded) storage.set('mindset-reminders',JSON.stringify(reminders)).catch(()=>{}); },[reminders,loaded]);
- useEffect(() => { if(loaded) storage.set('mental-vendas-desidentificacao',JSON.stringify({entries:desidentificationEntries,pinned:pinnedPhrase})).catch(()=>{}); },[desidentificationEntries,pinnedPhrase,loaded]);
- useEffect(() => { if(loaded) storage.set('mental-vendas-templates',JSON.stringify(templates)).catch(()=>{}); },[templates,loaded]);
- const [migrationRequested, setMigrationRequested] = useState(false);
- const [localMigrationData, setLocalMigrationData] = useState(null);
- const [syncError, setSyncError] = useState('');
- const SYNC_DEBOUNCE_MS = 700;
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(async()=>{try{
-   await syncUserRows('clients',user.id,clients.map(c=>({id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null})));
-   const raw=await storage.get('mindset-clients-meta').catch(()=>null);let meta={};try{meta=raw?JSON.parse(raw.value):{};}catch(_){}
-   const dirty=new Set(Array.isArray(meta.dirty)?meta.dirty.map(String):[]);clients.forEach(c=>dirty.delete(String(c.id)));
-   await storage.set('mindset-clients-meta',JSON.stringify({dirty:[...dirty],deleted:Array.isArray(meta.deleted)?meta.deleted:[]}));
-  }catch(e){window.SynapseLogger?.error('Falha de sincronização.',e);setSyncError('Não foi possível sincronizar clientes.');}},SYNC_DEBOUNCE_MS);return()=>clearTimeout(t);},[clients,loaded,user.id]);
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('reminders',user.id,reminders.map(r=>({id:r.id,text:r.text,due:r.due||null,client_id:r.clientId||null,done:!!r.done}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar lembretes.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[reminders,loaded,user.id]);
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncUserRows('checkins',user.id,checkins.map(c=>({id:c.id,date:c.date,mood:c.mood,identity:c.identity||'',note:c.note||'',reframe:c.reframe||'',mental_stages:c.mentalStages||{}}))).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar check-ins.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[checkins,loaded,user.id]);
- useEffect(()=>{ if(!loaded)return; const t=setTimeout(()=>{ syncSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{window.SynapseLogger?.error('Falha de sincronização.', e);setSyncError('Não foi possível sincronizar configurações.');}); },SYNC_DEBOUNCE_MS); return ()=>clearTimeout(t); },[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
- useEffect(()=>{ if(!syncError)return; const t=setTimeout(()=>setSyncError(''),5000); return()=>clearTimeout(t); },[syncError]);
+  return()=>{active=false;};
+ },[user.id,loadNonce]);
+ useEffect(()=>{if(loaded)persistence.writeCache(user.id,{clients,reminders,checkins,entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(()=>{});},[clients,reminders,checkins,desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
+ useEffect(()=>{if(!loaded)return;persistence.queueSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar configurações.',e);setSyncError('Não foi possível preparar a sincronização das configurações.');});},[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
+ const [migrationRequested,setMigrationRequested]=useState(false);
+ const [localMigrationData,setLocalMigrationData]=useState(null);
+ const [syncError,setSyncError]=useState('');
+ useEffect(()=>{if(!syncError)return;const t=setTimeout(()=>setSyncError(''),5000);return()=>clearTimeout(t);},[syncError]);
  async function migrateLocalData(){
   const data = localMigrationData;
   if(!data) { setMigrationRequested(false); return; }
   try {
    setClients(data.clients); setReminders(data.reminders); setCheckins(data.checkins); setDesidentificationEntries(data.entries); setPinnedPhrase(data.pinned); setTemplates(data.templates);
-   await Promise.all([
-    syncUserRows('clients',user.id,data.clients.map(c=>({id:c.id,name:c.name,contact:c.contact||'',stage:c.stage||'novo',temp:c.temp||'morno',last_contact:c.lastContact||null,created_at_date:c.createdAt||todayStr(),notes:c.notes||'',lost_reason:c.lostReason||'',lost_tags:c.lostTags||[],closed_at:c.closedAt||null}))),
-    syncUserRows('reminders',user.id,data.reminders.map(r=>({id:r.id,text:r.text,due:r.due||null,client_id:r.clientId||null,done:!!r.done}))),
-    syncUserRows('checkins',user.id,data.checkins.map(c=>({id:c.id,date:c.date,mood:c.mood,identity:c.identity||'',note:c.note||'',reframe:c.reframe||'',mental_stages:c.mentalStages||{}}))),
-    syncSettings(user.id,{entries:data.entries,pinned:data.pinned,templates:data.templates,theme})
-   ]);
+   await persistence.queueRows(user.id,'clients',data.clients);await persistence.queueRows(user.id,'reminders',data.reminders);await persistence.queueRows(user.id,'checkins',data.checkins);await persistence.queueSettings(user.id,{entries:data.entries,pinned:data.pinned,templates:data.templates,theme});await persistence.flush(user.id);
    setLocalMigrationData(null); setMigrationRequested(false); alert('Dados locais importados para sua conta Synapse.');
   } catch(e){window.SynapseLogger?.error('Falha na migração local.', e);alert('Não foi possível concluir a importação. Verifique sua conexão e tente novamente.');}
  }
@@ -430,36 +401,15 @@ function SynapseWorkspace({ user, onLogout }) {
  closed.forEach(c => { checkinDates.has(c.closedAt) ? closedWith++ : closedWithout++; });
  return { closedWith, closedWithout, daysWith, totalClosed: closed.length };
  }, [checkins, clients]);
- function deleteCheckin(id) {
-  if (!id) return;
-  if (!confirm('Excluir este autorreconhecimento do histórico? Esta ação não pode ser desfeita.')) return;
-  setCheckins(prev => prev.filter(c => c.id !== id));
-  deleteCloudRow('checkins', user.id, id).catch(e => { window.SynapseLogger?.error('Falha ao atualizar a nuvem.', e); setSyncError('O check-in foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
- }
- function saveCheckin(mood, identity, note, reframe, mentalStages) {
- identity=sanitizeInput(identity); note=sanitizeInput(note); reframe=sanitizeInput(reframe);
- setCheckins(prev => {
- const existing = prev.find(c => c.date === todayStr());
- const others = prev.filter(c => c.date !== todayStr());
- return [...others, { ...(existing || {}), id: (existing && existing.id) || uid(), date: todayStr(), mood, identity, note, reframe, mentalStages: mentalStages || (existing && existing.mentalStages) || {} }];
- });
- setJustSaved(true);
- setTimeout(() => setJustSaved(false), 1800);
- }
- function updateClientMeta(mutator){storage.get('mindset-clients-meta').then(raw=>{let meta={};try{meta=raw?JSON.parse(raw.value):{};}catch(_){}const next={dirty:Array.isArray(meta.dirty)?meta.dirty.map(String):[],deleted:Array.isArray(meta.deleted)?meta.deleted.map(String):[]};mutator(next);next.dirty=[...new Set(next.dirty)];next.deleted=[...new Set(next.deleted)];storage.set('mindset-clients-meta',JSON.stringify(next)).catch(()=>{});}).catch(()=>{});}
- function addClient(name,contact){name=sanitizeInput(name,200);contact=sanitizeInput(contact,500);const id=uid();updateClientMeta(meta=>{meta.dirty.push(String(id));meta.deleted=meta.deleted.filter(v=>v!==String(id));});setClients(prev=>[...prev,{id,name,contact,stage:'novo',temp:'morno',lastContact:todayStr(),createdAt:todayStr(),notes:'',lostReason:'',lostTags:[],closedAt:null}]);}
- function updateClient(id,patch){const cleanPatch=sanitizeRecord(patch,['name','contact','notes','lostReason']);if(Array.isArray(patch.lostTags))cleanPatch.lostTags=patch.lostTags.map(tag=>sanitizeInput(tag,100));updateClientMeta(meta=>{meta.dirty.push(String(id));meta.deleted=meta.deleted.filter(v=>v!==String(id));});setClients(prev=>prev.map(c=>{if(c.id!==id)return c;const next={...c,...cleanPatch};if(patch.stage==='fechado'&&!c.closedAt)next.closedAt=todayStr();if(patch.stage&&patch.stage!=='fechado')next.closedAt=null;return next;}));}
- function removeClient(id){const client=clients.find(c=>c.id===id);const label=client?`"${client.name}"`:'este cliente';if(!confirm(`Excluir ${label}? Esta ação não pode ser desfeita.`))return;updateClientMeta(meta=>{meta.dirty=meta.dirty.filter(v=>v!==String(id));meta.deleted.push(String(id));});setClients(prev=>prev.filter(c=>c.id!==id));deleteCloudRow('clients',user.id,id).then(async()=>{const raw=await storage.get('mindset-clients-meta').catch(()=>null);let meta={};try{meta=raw?JSON.parse(raw.value):{};}catch(_){}meta.dirty=Array.isArray(meta.dirty)?meta.dirty:[];meta.deleted=Array.isArray(meta.deleted)?meta.deleted:[];meta.deleted=meta.deleted.filter(v=>String(v)!==String(id));await storage.set('mindset-clients-meta',JSON.stringify(meta));}).catch(e=>{window.SynapseLogger?.error('Falha ao atualizar a nuvem.',e);setSyncError('O cliente foi removido da tela, mas não foi possível removê-lo da nuvem.');});}
- function addReminder(text, due, clientId) {
- text=sanitizeInput(text,1000);
- setReminders(prev => [...prev, { id: uid(), text, due, clientId: clientId || null, done: false }]);
- }
- function toggleReminder(id) { setReminders(prev => prev.map(r => r.id === id ? { ...r, done: !r.done } : r)); }
- function updateReminder(id, patch) { patch=sanitizeRecord(patch,['text']); setReminders(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r)); }
- function removeReminder(id) {
-  setReminders(prev => prev.filter(r => r.id !== id));
-  deleteCloudRow('reminders', user.id, id).catch(e => { window.SynapseLogger?.error('Falha ao atualizar a nuvem.', e); setSyncError('O lembrete foi removido da tela, mas não foi possível removê-lo da nuvem.'); });
- }
+ function deleteCheckin(id){if(!id)return;if(!confirm('Excluir este autorreconhecimento do histórico? Esta ação não pode ser desfeita.'))return;setCheckins(prev=>prev.filter(c=>c.id!==id));persistence.queueDelete(user.id,'checkins',id).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar exclusão.',e);setSyncError('O check-in foi removido da tela e será sincronizado quando possível.');});}
+ function saveCheckin(mood,identity,note,reframe,mentalStages){identity=sanitizeInput(identity);note=sanitizeInput(note);reframe=sanitizeInput(reframe);const existing=checkins.find(c=>c.date===todayStr());const next={...(existing||{}),id:(existing&&existing.id)||uid(),date:todayStr(),mood,identity,note,reframe,mentalStages:mentalStages||(existing&&existing.mentalStages)||{}};setCheckins(prev=>[...prev.filter(c=>c.date!==todayStr()),next]);persistence.queueUpsert(user.id,'checkins',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar check-in.',e);setSyncError('O check-in foi salvo localmente e será sincronizado quando possível.');});setJustSaved(true);setTimeout(()=>setJustSaved(false),1800);}
+ function addClient(name,contact){name=sanitizeInput(name,200);contact=sanitizeInput(contact,500);const client={id:uid(),name,contact,stage:'novo',temp:'morno',lastContact:todayStr(),createdAt:todayStr(),notes:'',lostReason:'',lostTags:[],closedAt:null};setClients(prev=>[...prev,client]);persistence.queueUpsert(user.id,'clients',client).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar cliente.',e);setSyncError('O cliente foi salvo localmente e será sincronizado quando possível.');});}
+ function updateClient(id,patch){const cleanPatch=sanitizeRecord(patch,['name','contact','notes','lostReason']);if(Array.isArray(patch.lostTags))cleanPatch.lostTags=patch.lostTags.map(tag=>sanitizeInput(tag,100));setClients(prev=>{const current=prev.find(c=>c.id===id);if(!current)return prev;const next={...current,...cleanPatch};if(patch.stage==='fechado'&&!current.closedAt)next.closedAt=todayStr();if(patch.stage&&patch.stage!=='fechado')next.closedAt=null;persistence.queueUpsert(user.id,'clients',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar cliente.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(c=>c.id===id?next:c);});}
+ function removeClient(id){const client=clients.find(c=>c.id===id),label=client?'"'+client.name+'"':'este cliente';if(!confirm('Excluir '+label+'? Esta ação não pode ser desfeita.'))return;setClients(prev=>prev.filter(c=>c.id!==id));persistence.queueDelete(user.id,'clients',id).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar exclusão.',e);setSyncError('O cliente foi removido da tela e a exclusão será sincronizada quando possível.');});}
+ function addReminder(text,due,clientId){text=sanitizeInput(text,1000);const reminder={id:uid(),text,due,clientId:clientId||null,done:false};setReminders(prev=>[...prev,reminder]);persistence.queueUpsert(user.id,'reminders',reminder).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar lembrete.',e);setSyncError('O lembrete foi salvo localmente e será sincronizado quando possível.');});}
+ function toggleReminder(id){setReminders(prev=>{const current=prev.find(r=>r.id===id);if(!current)return prev;const next={...current,done:!current.done};persistence.queueUpsert(user.id,'reminders',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar lembrete.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(r=>r.id===id?next:r);});}
+ function updateReminder(id,patch){patch=sanitizeRecord(patch,['text']);setReminders(prev=>{const current=prev.find(r=>r.id===id);if(!current)return prev;const next={...current,...patch};persistence.queueUpsert(user.id,'reminders',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar lembrete.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(r=>r.id===id?next:r);});}
+ function removeReminder(id){setReminders(prev=>prev.filter(r=>r.id!==id));persistence.queueDelete(user.id,'reminders',id).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar exclusão.',e);setSyncError('O lembrete foi removido da tela e a exclusão será sincronizada quando possível.');});}
  function exportBackup() {
  const payload = { checkins, clients, reminders, desidentificationEntries, pinnedPhrase, templates, exportedAt: new Date().toISOString() };
  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -479,12 +429,14 @@ function SynapseWorkspace({ user, onLogout }) {
     const data = JSON.parse(raw);
     if (!confirm('Importar este backup vai substituir todos os dados atuais. Continuar?')) return;
     const clean = sanitizeInput;
-    setCheckins(Array.isArray(data.checkins) ? data.checkins.map(c=>sanitizeRecord(c,['identity','note','reframe'])) : []);
-    setClients(Array.isArray(data.clients) ? data.clients.map(c=>sanitizeRecord(c,['name','contact','notes','lostReason'])) : []);
-    setReminders(Array.isArray(data.reminders) ? data.reminders.map(r=>sanitizeRecord(r,['text'])) : []);
-    setDesidentificationEntries(Array.isArray(data.desidentificationEntries) ? data.desidentificationEntries.map(clean) : []);
-    setPinnedPhrase(data.pinnedPhrase ? sanitizeRecord(data.pinnedPhrase,['text','phrase']) : null);
-    setTemplates(Array.isArray(data.templates) ? data.templates.map(t=>sanitizeRecord(t,['title','text','category'])) : []);
+    const nextCheckins=Array.isArray(data.checkins)?data.checkins.map(c=>sanitizeRecord(c,['identity','note','reframe'])):[];
+    const nextClients=Array.isArray(data.clients)?data.clients.map(c=>sanitizeRecord(c,['name','contact','notes','lostReason'])):[];
+    const nextReminders=Array.isArray(data.reminders)?data.reminders.map(r=>sanitizeRecord(r,['text'])):[];
+    const nextEntries=Array.isArray(data.desidentificationEntries)?data.desidentificationEntries.map(clean):[];
+    const nextPinned=data.pinnedPhrase?sanitizeRecord(data.pinnedPhrase,['text','phrase']):null;
+    const nextTemplates=Array.isArray(data.templates)?data.templates.map(t=>sanitizeRecord(t,['title','text','category'])):[];
+    setCheckins(nextCheckins);setClients(nextClients);setReminders(nextReminders);setDesidentificationEntries(nextEntries);setPinnedPhrase(nextPinned);setTemplates(nextTemplates);
+    await persistence.replaceAll(user.id,{clients:nextClients,reminders:nextReminders,checkins:nextCheckins,entries:nextEntries,pinned:nextPinned,templates:nextTemplates,theme});
    } catch (err) {
     window.SynapseLogger?.error('Backup inválido.', err, { fileName:file?.name });
     alert('Arquivo inválido. Verifique se é um backup exportado pelo Synapse.');

@@ -1,6 +1,6 @@
 // Service worker do Synapse: cache do app shell para abertura instantânea
 // e uso básico offline. Não intercepta chamadas ao Supabase nem ao Gemini.
-const CACHE_NAME = 'synapse-shell-v9';
+const CACHE_NAME = 'synapse-shell-v10';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const SHELL_FILES = [
   './core/sanitize.js',
   './services/storage.js',
   './services/supabase.js',
+  './services/persistence.js',
   './services/spreadsheet.js',
   './manifest.json?v=9',
   './synapse-mark.png',
