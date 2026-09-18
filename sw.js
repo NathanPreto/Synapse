@@ -1,6 +1,6 @@
 // Service worker do Synapse: cache do app shell para abertura instantânea
 // e uso básico offline. Chamadas para APIs externas não são interceptadas.
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 const CACHE_NAME = `synapse-shell-${CACHE_VERSION}`;
 const SHELL_FILES = [
   './',
