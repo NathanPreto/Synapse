@@ -120,7 +120,7 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .header-account-user{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:10px;padding:8px 8px 12px;border-bottom:1px solid var(--border)}
 .header-account-user img,.header-account-avatar-fallback{width:38px;height:38px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:var(--surface2);color:var(--text);font-size:12px;font-weight:800}
 .header-account-user b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text)}
-.header-account-user small{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--muted2)}
+.header-account-user small{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--muted2)}.header-account-legal{display:flex;flex-direction:column;gap:2px;padding:8px 8px 6px;border-bottom:1px solid var(--border)}.header-account-legal a{display:block;padding:7px 8px;border-radius:8px;color:var(--text);font-size:12px;font-weight:600;text-decoration:none}.header-account-legal a:hover{background:var(--surface2);color:var(--teal)}
 .header-account-logout{width:100%;margin-top:8px;padding:10px 9px;border:0;border-radius:10px;background:transparent;color:var(--text);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:700;text-align:left;cursor:pointer}
 .header-account-logout:hover{background:var(--surface2);color:var(--rose)}
 .cloud-load-state{min-height:calc(100dvh - 56px);display:grid;place-items:center;padding:30px}
@@ -181,7 +181,7 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .auth-kicker{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#747a76;margin-bottom:18px}
 .auth-side-content h1{margin:0;white-space:pre-line;font-family:Newsreader,serif;font-size:clamp(44px,5vw,66px);font-weight:500;line-height:.98;letter-spacing:-.055em;color:#171918}
 .auth-side-content p{max-width:390px;margin:22px 0 0;font-size:14px;line-height:1.65;color:#5e6561}
-.auth-side-footer{position:relative;z-index:1;font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa09c}
+.auth-side-footer{position:relative;z-index:1;font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa09c}.auth-side-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.auth-legal-links{display:flex;align-items:center;gap:8px;letter-spacing:normal;font-weight:600}.auth-legal-links a{color:inherit;text-decoration:none}.auth-legal-links a:hover{text-decoration:underline;color:#fff}
 .auth-card{
   width:auto;max-width:none;min-width:0;padding:44px 42px;align-self:stretch;
   border:0;border-left:1px solid #e8e9e6;border-radius:0;background:#fff;
