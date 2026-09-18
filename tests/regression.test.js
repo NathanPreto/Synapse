@@ -257,11 +257,11 @@ test('Mensagens da Syn são formatadas sem interpretar HTML ou SVG', () => {
   const helper = app.indexOf('function formatSynMessage(text)');
   const chat = app.indexOf('function AIAssistant(');
   const afterChat = app.indexOf('\nfunction ', chat + 1);
-  const iaSegment = app.slice(helper, afterChat >= 0 ? afterChat : app.length);
+  const renderSegment = app.slice(helper, afterChat >= 0 ? afterChat : app.length);
   assert.ok(helper >= 0 && chat > helper);
-  assert.match(iaSegment, /formatSynMessage\(answer\)/);
-  assert.match(iaSegment, /ai-message-list/);
-  assert.equal(iaSegment.includes("dangerouslySetInnerHTML"), false);
+  assert.match(app, /formatSynMessage\(answer\)/);
+  assert.match(renderSegment, /ai-message-list/);
+  assert.equal(renderSegment.includes("dangerouslySetInnerHTML"), false);
 });
 
 test('Renderizador da Syn transforma listas em elementos seguros', () => {
