@@ -9,13 +9,15 @@ const corsHeaders = {
 // A Syn é uma assistente básica: priorizamos baixa latência e baixo consumo.
 const MODELS = [
   { id: "gemini-3.5-flash-lite", thinkingLevel: "minimal" },
+  { id: "gemini-3.1-flash-lite", thinkingLevel: "minimal" },
+  { id: "gemini-2.5-flash-lite", thinkingLevel: "minimal" },
   { id: "gemini-3.8-flash", thinkingLevel: "low" }
 ];
 const MAX_MESSAGES = 20;
 const MAX_TEXT_LENGTH = 4000;
 const MAX_CONTEXT_LENGTH = 5000;
-const TOTAL_TIMEOUT_MS = 9000;
-const ATTEMPT_TIMEOUT_MS = 5000;
+const TOTAL_TIMEOUT_MS = 12000;
+const ATTEMPT_TIMEOUT_MS = 3500;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
