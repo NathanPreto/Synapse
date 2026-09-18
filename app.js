@@ -264,11 +264,11 @@ function App() {
   if (!auth) { setAuthLoading(false); return () => {}; }
   auth.getSession().then(({data, error}) => {
    if (!active) return;
-   if (error) window.SynapseLogger?.error('Falha ao recuperar sessão do Synapse.', error);
+   if (error) window.SynapseLogger?.warn('Falha ao recuperar sessão do Synapse.', error);
    setSession(data?.session || null);
    setAuthLoading(false);
   }).catch(error => {
-   window.SynapseLogger?.error('Falha ao recuperar sessão do Synapse.', error);
+   window.SynapseLogger?.warn('Falha ao recuperar sessão do Synapse.', error);
    if (active) { setSession(null); setAuthLoading(false); }
   });
   const { data: listener } = auth.onAuthStateChange((event, nextSession) => {
@@ -344,7 +344,7 @@ function SynapseWorkspace({ user, onLogout }) {
     else {const [c1,c2,c3,c4,c5]=await Promise.all([storage.get('mindset-checkins').catch(()=>null),storage.get('mindset-clients').catch(()=>null),storage.get('mindset-reminders').catch(()=>null),storage.get('mental-vendas-desidentificacao').catch(()=>null),storage.get('mental-vendas-templates').catch(()=>null)]);const localClients=c2?JSON.parse(c2.value):[],localReminders=c3?JSON.parse(c3.value):[],localCheckins=c1?JSON.parse(c1.value):[],localMental=c4?JSON.parse(c4.value):{},localTemplates=c5?JSON.parse(c5.value):[];if(localClients.length||localReminders.length||localCheckins.length||localTemplates.length||localMental.entries?.length||localMental.pinned){setLocalMigrationData({clients:localClients,reminders:localReminders,checkins:localCheckins,entries:localMental.entries||[],pinned:localMental.pinned||null,templates:localTemplates});setMigrationRequested(true);}}
     if(pending.length)persistence.flush(user.id).catch(()=>{});
    } catch(e) {
-    window.SynapseLogger?.error('Falha ao carregar Synapse.',e);
+    window.SynapseLogger?.warn('Falha ao carregar Synapse.',e);
     const cached=await persistence.readCache(user.id).catch(()=>null),pending=await persistence.getPending(user.id).catch(()=>[]);
     if(active&&cached){const resolved=persistence.applyPending(cached,pending);setClients(resolved.clients);setReminders(resolved.reminders);setCheckins(resolved.checkins);setDesidentificationEntries(resolved.entries);setPinnedPhrase(resolved.pinned);setTemplates(resolved.templates);if(resolved.theme)setTheme(resolved.theme);setSyncError('Sem conexão com a nuvem. Suas alterações ficam na fila e serão sincronizadas quando a conexão voltar.');}
     else if(active){setLoadError('Não foi possível carregar seus dados da nuvem. Seus dados não foram alterados. Verifique a conexão e tente novamente.');return;}
@@ -354,7 +354,7 @@ function SynapseWorkspace({ user, onLogout }) {
   return()=>{active=false;};
  },[user.id,loadNonce]);
  useEffect(()=>{if(loaded)persistence.writeCache(user.id,{clients,reminders,checkins,entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(()=>{});},[clients,reminders,checkins,desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
- useEffect(()=>{if(!loaded)return;persistence.queueSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar configurações.',e);setSyncError('Não foi possível preparar a sincronização das configurações.');});},[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
+ useEffect(()=>{if(!loaded)return;persistence.queueSettings(user.id,{entries:desidentificationEntries,pinned:pinnedPhrase,templates,theme}).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar configurações.',e);setSyncError('Não foi possível preparar a sincronização das configurações.');});},[desidentificationEntries,pinnedPhrase,templates,theme,loaded,user.id]);
  const [migrationRequested,setMigrationRequested]=useState(false);
  const [localMigrationData,setLocalMigrationData]=useState(null);
  const [syncError,setSyncError]=useState('');
@@ -367,7 +367,7 @@ function SynapseWorkspace({ user, onLogout }) {
    setClients(data.clients); setReminders(data.reminders); setCheckins(data.checkins); setDesidentificationEntries(data.entries); setPinnedPhrase(data.pinned); setTemplates(data.templates);
    await persistence.queueRows(user.id,'clients',data.clients);await persistence.queueRows(user.id,'reminders',data.reminders);await persistence.queueRows(user.id,'checkins',data.checkins);await persistence.queueSettings(user.id,{entries:data.entries,pinned:data.pinned,templates:data.templates,theme});await persistence.flush(user.id);
    setLocalMigrationData(null); setMigrationRequested(false); alert('Dados locais importados para sua conta Synapse.');
-  } catch(e){window.SynapseLogger?.error('Falha na migração local.', e);alert('Não foi possível concluir a importação. Verifique sua conexão e tente novamente.');}
+  } catch(e){window.SynapseLogger?.warn('Falha na migração local.', e);alert('Não foi possível concluir a importação. Verifique sua conexão e tente novamente.');}
  }
  const streak = useMemo(() => {
  const dates = new Set(checkins.map(c => c.date));
@@ -404,15 +404,15 @@ function SynapseWorkspace({ user, onLogout }) {
  closed.forEach(c => { checkinDates.has(c.closedAt) ? closedWith++ : closedWithout++; });
  return { closedWith, closedWithout, daysWith, totalClosed: closed.length };
  }, [checkins, clients]);
- function deleteCheckin(id){if(!id)return;if(!confirm('Excluir este autorreconhecimento do histórico? Esta ação não pode ser desfeita.'))return;setCheckins(prev=>prev.filter(c=>c.id!==id));persistence.queueDelete(user.id,'checkins',id).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar exclusão.',e);setSyncError('O check-in foi removido da tela e será sincronizado quando possível.');});}
- function saveCheckin(mood,identity,note,reframe,mentalStages){identity=sanitizeInput(identity);note=sanitizeInput(note);reframe=sanitizeInput(reframe);const existing=checkins.find(c=>c.date===todayStr());const next={...(existing||{}),id:(existing&&existing.id)||uid(),date:todayStr(),mood,identity,note,reframe,mentalStages:mentalStages||(existing&&existing.mentalStages)||{}};setCheckins(prev=>[...prev.filter(c=>c.date!==todayStr()),next]);persistence.queueUpsert(user.id,'checkins',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar check-in.',e);setSyncError('O check-in foi salvo localmente e será sincronizado quando possível.');});setJustSaved(true);setTimeout(()=>setJustSaved(false),1800);}
- function addClient(name,contact){name=sanitizeInput(name,200);contact=sanitizeInput(contact,500);const client={id:uid(),name,contact,stage:'novo',temp:'morno',lastContact:todayStr(),createdAt:todayStr(),notes:'',lostReason:'',lostTags:[],closedAt:null};setClients(prev=>[...prev,client]);persistence.queueUpsert(user.id,'clients',client).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar cliente.',e);setSyncError('O cliente foi salvo localmente e será sincronizado quando possível.');});}
- function updateClient(id,patch){const cleanPatch=sanitizeRecord(patch,['name','contact','notes','lostReason']);if(Array.isArray(patch.lostTags))cleanPatch.lostTags=patch.lostTags.map(tag=>sanitizeInput(tag,100));setClients(prev=>{const current=prev.find(c=>c.id===id);if(!current)return prev;const next={...current,...cleanPatch};if(patch.stage==='fechado'&&!current.closedAt)next.closedAt=todayStr();if(patch.stage&&patch.stage!=='fechado')next.closedAt=null;persistence.queueUpsert(user.id,'clients',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar cliente.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(c=>c.id===id?next:c);});}
- function removeClient(id){const client=clients.find(c=>c.id===id),label=client?'"'+client.name+'"':'este cliente';if(!confirm('Excluir '+label+'? Esta ação não pode ser desfeita.'))return;setClients(prev=>prev.filter(c=>c.id!==id));persistence.queueDelete(user.id,'clients',id).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar exclusão.',e);setSyncError('O cliente foi removido da tela e a exclusão será sincronizada quando possível.');});}
- function addReminder(text,due,clientId){text=sanitizeInput(text,1000);const reminder={id:uid(),text,due,clientId:clientId||null,done:false};setReminders(prev=>[...prev,reminder]);persistence.queueUpsert(user.id,'reminders',reminder).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar lembrete.',e);setSyncError('O lembrete foi salvo localmente e será sincronizado quando possível.');});}
- function toggleReminder(id){setReminders(prev=>{const current=prev.find(r=>r.id===id);if(!current)return prev;const next={...current,done:!current.done};persistence.queueUpsert(user.id,'reminders',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar lembrete.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(r=>r.id===id?next:r);});}
- function updateReminder(id,patch){patch=sanitizeRecord(patch,['text']);setReminders(prev=>{const current=prev.find(r=>r.id===id);if(!current)return prev;const next={...current,...patch};persistence.queueUpsert(user.id,'reminders',next).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar lembrete.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(r=>r.id===id?next:r);});}
- function removeReminder(id){setReminders(prev=>prev.filter(r=>r.id!==id));persistence.queueDelete(user.id,'reminders',id).catch(e=>{window.SynapseLogger?.error('Falha ao enfileirar exclusão.',e);setSyncError('O lembrete foi removido da tela e a exclusão será sincronizada quando possível.');});}
+ function deleteCheckin(id){if(!id)return;if(!confirm('Excluir este autorreconhecimento do histórico? Esta ação não pode ser desfeita.'))return;setCheckins(prev=>prev.filter(c=>c.id!==id));persistence.queueDelete(user.id,'checkins',id).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar exclusão.',e);setSyncError('O check-in foi removido da tela e será sincronizado quando possível.');});}
+ function saveCheckin(mood,identity,note,reframe,mentalStages){identity=sanitizeInput(identity);note=sanitizeInput(note);reframe=sanitizeInput(reframe);const existing=checkins.find(c=>c.date===todayStr());const next={...(existing||{}),id:(existing&&existing.id)||uid(),date:todayStr(),mood,identity,note,reframe,mentalStages:mentalStages||(existing&&existing.mentalStages)||{}};setCheckins(prev=>[...prev.filter(c=>c.date!==todayStr()),next]);persistence.queueUpsert(user.id,'checkins',next).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar check-in.',e);setSyncError('O check-in foi salvo localmente e será sincronizado quando possível.');});setJustSaved(true);setTimeout(()=>setJustSaved(false),1800);}
+ function addClient(name,contact){name=sanitizeInput(name,200);contact=sanitizeInput(contact,500);const client={id:uid(),name,contact,stage:'novo',temp:'morno',lastContact:todayStr(),createdAt:todayStr(),notes:'',lostReason:'',lostTags:[],closedAt:null};setClients(prev=>[...prev,client]);persistence.queueUpsert(user.id,'clients',client).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar cliente.',e);setSyncError('O cliente foi salvo localmente e será sincronizado quando possível.');});}
+ function updateClient(id,patch){const cleanPatch=sanitizeRecord(patch,['name','contact','notes','lostReason']);if(Array.isArray(patch.lostTags))cleanPatch.lostTags=patch.lostTags.map(tag=>sanitizeInput(tag,100));setClients(prev=>{const current=prev.find(c=>c.id===id);if(!current)return prev;const next={...current,...cleanPatch};if(patch.stage==='fechado'&&!current.closedAt)next.closedAt=todayStr();if(patch.stage&&patch.stage!=='fechado')next.closedAt=null;persistence.queueUpsert(user.id,'clients',next).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar cliente.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(c=>c.id===id?next:c);});}
+ function removeClient(id){const client=clients.find(c=>c.id===id),label=client?'"'+client.name+'"':'este cliente';if(!confirm('Excluir '+label+'? Esta ação não pode ser desfeita.'))return;setClients(prev=>prev.filter(c=>c.id!==id));persistence.queueDelete(user.id,'clients',id).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar exclusão.',e);setSyncError('O cliente foi removido da tela e a exclusão será sincronizada quando possível.');});}
+ function addReminder(text,due,clientId){text=sanitizeInput(text,1000);const reminder={id:uid(),text,due,clientId:clientId||null,done:false};setReminders(prev=>[...prev,reminder]);persistence.queueUpsert(user.id,'reminders',reminder).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar lembrete.',e);setSyncError('O lembrete foi salvo localmente e será sincronizado quando possível.');});}
+ function toggleReminder(id){setReminders(prev=>{const current=prev.find(r=>r.id===id);if(!current)return prev;const next={...current,done:!current.done};persistence.queueUpsert(user.id,'reminders',next).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar lembrete.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(r=>r.id===id?next:r);});}
+ function updateReminder(id,patch){patch=sanitizeRecord(patch,['text']);setReminders(prev=>{const current=prev.find(r=>r.id===id);if(!current)return prev;const next={...current,...patch};persistence.queueUpsert(user.id,'reminders',next).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar lembrete.',e);setSyncError('A alteração foi salva localmente e será sincronizada quando possível.');});return prev.map(r=>r.id===id?next:r);});}
+ function removeReminder(id){setReminders(prev=>prev.filter(r=>r.id!==id));persistence.queueDelete(user.id,'reminders',id).catch(e=>{window.SynapseLogger?.warn('Falha ao enfileirar exclusão.',e);setSyncError('O lembrete foi removido da tela e a exclusão será sincronizada quando possível.');});}
  function exportBackup() {
  const payload = { checkins, clients, reminders, desidentificationEntries, pinnedPhrase, templates, exportedAt: new Date().toISOString() };
  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -441,11 +441,11 @@ function SynapseWorkspace({ user, onLogout }) {
     setCheckins(nextCheckins);setClients(nextClients);setReminders(nextReminders);setDesidentificationEntries(nextEntries);setPinnedPhrase(nextPinned);setTemplates(nextTemplates);
     await persistence.replaceAll(user.id,{clients:nextClients,reminders:nextReminders,checkins:nextCheckins,entries:nextEntries,pinned:nextPinned,templates:nextTemplates,theme});
    } catch (err) {
-    window.SynapseLogger?.error('Backup inválido.', err, { fileName:file?.name });
+    window.SynapseLogger?.warn('Backup inválido.', err, { fileName:file?.name });
     alert('Arquivo inválido. Verifique se é um backup exportado pelo Synapse.');
    }
   }).catch(err => {
-   window.SynapseLogger?.error('Falha ao ler backup.', err, { fileName:file?.name });
+   window.SynapseLogger?.warn('Falha ao ler backup.', err, { fileName:file?.name });
    alert(err.message || 'Não foi possível ler o backup.');
   }).finally(() => window.SynapseFeedback?.end());
  }
@@ -496,11 +496,11 @@ function SynapseWorkspace({ user, onLogout }) {
    fields.forEach(field => { if (autoMap[field] && confidence[field] >= 75) return; if (autoMap[field] && used.has(autoMap[field])) autoMap[field] = ''; else if (autoMap[field]) used.add(autoMap[field]); });
    setExcelReview({ rows, headers, mappings: autoMap, confidence, fieldLabels, fileName: file.name });
   } catch (err) {
-   window.SynapseLogger?.error('Falha ao preparar a planilha para importação.', err, { fileName:file?.name });
+   window.SynapseLogger?.warn('Falha ao preparar a planilha para importação.', err, { fileName:file?.name });
    alert('Não foi possível interpretar a planilha. Use .xlsx, .xls ou .csv e mantenha a primeira linha como cabeçalho.');
   }
  }).catch(err => {
-  window.SynapseLogger?.error('Falha ao processar planilha.', err, { fileName:file?.name });
+  window.SynapseLogger?.warn('Falha ao processar planilha.', err, { fileName:file?.name });
   alert(err.message || 'Não foi possível ler a planilha.');
  });
  }
@@ -543,7 +543,7 @@ function SynapseWorkspace({ user, onLogout }) {
    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', { method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':key}, body:JSON.stringify({system_instruction:{parts:[{text:context}]},contents:[{parts:[{text:aiQuestion.trim()}]}],generationConfig:{temperature:0.4,maxOutputTokens:500}}) });
    const data=await response.json(); if(!response.ok) throw new Error(data?.error?.message || 'Não foi possível consultar a IA.');
    const text=sanitizeInput(data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || 'A IA não retornou uma resposta.', 20000); setAiAnswer(text);
-  } catch(err) { window.SynapseLogger?.error('Falha ao consultar a IA.', err); setAiAnswer(`Não consegui consultar a IA agora. ${err.message || 'Verifique sua chave e a conexão.'}`); }
+  } catch(err) { window.SynapseLogger?.warn('Falha ao consultar a IA.', err); setAiAnswer(`Não consegui consultar a IA agora. ${err.message || 'Verifique sua chave e a conexão.'}`); }
   finally { setAiBusy(false); }
  }
  if (loadError) {

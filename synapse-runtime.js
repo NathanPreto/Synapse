@@ -31,6 +31,9 @@
     if (lower.includes('syntaxerror') || lower.includes('unexpected token')) {
       return 'O aplicativo encontrou um erro ao carregar um componente. Recarregue a página e tente novamente.';
     }
+    if (lower.includes('cannot read properties of undefined') || lower.includes('cannot read properties of null') || lower.includes('is not a function')) {
+      return 'Uma parte do aplicativo tentou usar um serviço que não estava disponível. Recarregue a página. Se o erro persistir, abra o diagnóstico técnico.';
+    }
     if (fallbackMessage && !/^erro inesperado em tempo de execução\\.?$/i.test(String(fallbackMessage).trim()) && !/^falha assíncrona não tratada\\.?$/i.test(String(fallbackMessage).trim())) {
       return String(fallbackMessage).trim();
     }
