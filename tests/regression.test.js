@@ -198,5 +198,5 @@ test('Falha da IA não é mascarada no frontend', () => {
   assert.match(app, /Sua sessão expirou/);
   assert.match(app, /A Syn ainda não está configurada no servidor/);
   assert.match(app, /credencial da IA no servidor foi recusada/);
-  assert.match(app, /O Gemini não respondeu em até 12 segundos/);
+  assert.match(app, /A Syn não respondeu em até 12 segundos/);
 });

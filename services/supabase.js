@@ -45,13 +45,24 @@
       });
       if (error) {
         let detail = '';
+        let code = '';
         try {
           if (error.context?.json) {
             const payload = await error.context.json();
-            detail = payload?.code ? `${payload.code}: ${payload.error || payload.message || ''}` : payload?.error || payload?.message || '';
+            code = String(payload?.code || '').toUpperCase();
+            detail = payload?.error || payload?.message || '';
           }
         } catch (_) {}
-        throw new Error(detail || error.message || 'Não foi possível consultar a IA.');
+        const userMessage = code === 'CONFIG_MISSING'
+          ? 'A Syn ainda não está configurada no servidor. A credencial precisa estar cadastrada no servidor.'
+          : code === 'GEMINI_AUTH'
+            ? 'A Syn não conseguiu validar sua configuração. Verifique a configuração da Syn no servidor.'
+            : code === 'GEMINI_QUOTA'
+              ? 'A Syn atingiu o limite de uso. Tente novamente em alguns instantes.'
+              : code === 'GEMINI_TIMEOUT'
+                ? 'A Syn não respondeu em até 12 segundos. A conexão está demorando além do esperado.'
+                : '';
+        throw new Error(userMessage || detail || error.message || 'Não foi possível consultar a Syn.');
       }
       if (!data?.answer) throw new Error('A IA não retornou uma resposta.');
       return { answer: String(data.answer) };

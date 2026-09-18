@@ -553,17 +553,13 @@ function SynapseWorkspace({ user, onLogout }) {
    const message = lower.includes('sessão expirou')
     ? 'Sua sessão expirou. Atualize a página e entre novamente.'
     : lower.includes('não está configurada no servidor')
-     ? 'A Syn ainda não está configurada no servidor. A chave de IA precisa estar cadastrada no secret da Edge Function.'
-     : lower.includes('api key') || lower.includes('api_key') || lower.includes('unauthorized') || lower.includes('permission denied')
-      ? 'A credencial da IA no servidor foi recusada. Verifique a configuração da GEMINI_API_KEY.'
-      : lower.includes('quota') || lower.includes('rate limit') || lower.includes('resource exhausted')
-       ? 'A IA atingiu o limite de uso. Tente novamente em alguns instantes.'
-       : lower.includes('gemini_timeout') || lower.includes('demorou demais') || lower.includes('timeout')
-        ? 'O Gemini não respondeu em até 12 segundos. A conexão com o provedor está demorando além do esperado.'
-        : lower.includes('gemini_auth')
-         ? 'O Gemini recusou a credencial da IA. Verifique a GEMINI_API_KEY cadastrada no servidor.'
-         : lower.includes('gemini_quota')
-          ? 'O Gemini informou limite de uso. Tente novamente em alguns instantes.'
+     ? 'A Syn ainda não está configurada no servidor. A credencial precisa estar cadastrada no servidor.'
+     : lower.includes('não conseguiu validar sua configuração')
+      ? 'A Syn não conseguiu validar sua configuração. Verifique a configuração da Syn no servidor.'
+      : lower.includes('atingiu o limite de uso') || lower.includes('limite de uso')
+       ? 'A Syn atingiu o limite de uso. Tente novamente em alguns instantes.'
+       : lower.includes('não respondeu em até 12 segundos')
+        ? 'A Syn não respondeu em até 12 segundos. A conexão está demorando além do esperado.'
         : raw || 'Não foi possível consultar a Syn agora.';
    setAiMessages(prev => [...prev, { role:'model', text:message }]);
   } finally { setAiBusy(false); }
