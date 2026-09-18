@@ -33,9 +33,9 @@ test('Service Worker não referencia arquivos legados inexistentes', () => {
 test('Versão do Service Worker está sincronizada com index e manifest', () => {
   const sw = read('sw.js'), index = read('index.html'), manifest = read('manifest.json');
   assert.match(sw, /CACHE_VERSION = ['"]v12['"]/);
-  assert.match(index, /sw\.js\?v=11/);
-  assert.match(index, /manifest\.json\?v=11/);
-  assert.match(manifest, /start_url": "\/\?v=11"/);
+  assert.match(index, /sw\.js\?v=12/);
+  assert.match(index, /manifest\.json\?v=12/);
+  assert.match(manifest, /start_url": "\/\?v=12"/);
 });
 
 test('Chamadas tratadas não usam logger de erro global no frontend/persistência', () => {
