@@ -3,8 +3,42 @@
   const safeString = value => {
     try { return typeof value === 'string' ? value : JSON.stringify(value); } catch (_) { return String(value); }
   };
+  function friendlyRuntimeMessage(error, fallbackMessage) {
+    const raw = String(error?.message || error || fallbackMessage || '').trim();
+    const lower = raw.toLowerCase();
+    if (!raw) return 'Erro inesperado em tempo de execução.';
+    if (lower.includes('failed to fetch') || lower.includes('networkerror') || lower.includes('network error') || lower.includes('fetch')) {
+      return 'Não foi possível concluir a operação porque a conexão com o servidor falhou.';
+    }
+    if (lower.includes('row-level security') || lower.includes('rls') || lower.includes('permission denied') || lower.includes('not authorized')) {
+      return 'A operação foi bloqueada por uma permissão de acesso. Seus dados locais não foram apagados.';
+    }
+    if (lower.includes('duplicate key') || lower.includes('unique constraint')) {
+      return 'A alteração não pôde ser salva porque já existe um registro com o mesmo identificador.';
+    }
+    if (lower.includes('column') && lower.includes('does not exist')) {
+      return 'A alteração não pôde ser salva porque a estrutura do banco de dados não está compatível com esta versão do Synapse.';
+    }
+    if (lower.includes('relation') && lower.includes('does not exist')) {
+      return 'A operação não pôde ser concluída porque uma tabela necessária não foi encontrada no banco de dados.';
+    }
+    if (lower.includes('timeout') || lower.includes('timed out')) {
+      return 'A operação demorou demais para responder. Verifique sua conexão e tente novamente.';
+    }
+    if (lower.includes('quota') || lower.includes('rate limit') || lower.includes('too many requests')) {
+      return 'O serviço atingiu um limite temporário. Aguarde alguns instantes e tente novamente.';
+    }
+    if (lower.includes('syntaxerror') || lower.includes('unexpected token')) {
+      return 'O aplicativo encontrou um erro ao carregar um componente. Recarregue a página e tente novamente.';
+    }
+    if (fallbackMessage && !/^erro inesperado em tempo de execução\\.?$/i.test(String(fallbackMessage).trim()) && !/^falha assíncrona não tratada\\.?$/i.test(String(fallbackMessage).trim())) {
+      return String(fallbackMessage).trim();
+    }
+    return 'Erro inesperado em tempo de execução.';
+  }
   function emit(level, message, error, context) {
-    const payload = { level, message: safeString(message), error: error?.message || error || null, context: context || null, at: new Date().toISOString() };
+    const resolvedMessage = level === 'error' ? friendlyRuntimeMessage(error, message) : safeString(message);
+    const payload = { level, message: safeString(resolvedMessage), error: error?.message || error || null, context: context || null, at: new Date().toISOString() };
     try { console[level === 'error' ? 'error' : 'warn']('[Synapse]', payload); } catch (_) {}
     listeners.forEach(fn => { try { fn(payload); } catch (_) {} });
     try { window.dispatchEvent(new CustomEvent('synapse:error', { detail: payload })); } catch (_) {}

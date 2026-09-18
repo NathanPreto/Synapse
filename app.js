@@ -309,7 +309,7 @@ function SynapseWorkspace({ user, onLogout }) {
  const [runtimeError, setRuntimeError] = useState('');
  useEffect(() => {
   const onBusy = event => setOperationBusy(!!event.detail?.busy);
-  const onError = event => { const message = event.detail?.message || 'Ocorreu um erro inesperado.'; setRuntimeError(message); setTimeout(() => setRuntimeError(''), 6500); };
+  const onError = event => { const message = event.detail?.message || 'Erro inesperado em tempo de execução.'; setRuntimeError(message); setTimeout(() => setRuntimeError(''), 6500); };
   window.addEventListener('synapse:busy', onBusy);
   window.addEventListener('synapse:error', onError);
   return () => { window.removeEventListener('synapse:busy', onBusy); window.removeEventListener('synapse:error', onError); };
@@ -620,7 +620,7 @@ function SynapseWorkspace({ user, onLogout }) {
   );
  }
  return React.createElement(Shell, { theme },
-  (syncError || runtimeError) && React.createElement('div',{className:'sync-banner error'},runtimeError || syncError),
+  (syncError || runtimeError) && React.createElement('div',{className:'sync-banner error'},syncError || runtimeError),
   operationBusy && React.createElement('div',{className:'sync-banner loading'},'Processando…'),
   React.createElement('div',{className:'synapse-layout'+(sidebarOpen?' is-sidebar-open':'')},
   React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange:setSidebarOpen }),
