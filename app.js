@@ -3,6 +3,7 @@ const { useState, useEffect, useMemo } = React;
 const { persistentStorage, storage, safeSessionGet, safeSessionSet } = window.SynapseStorage;
 const { client: supabaseClient, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData } = window.SynapseSupabase;
 const { sanitizeInput, sanitizeRecord } = window.SynapseSecurity;
+const LOST_TAGS = ['Preço','Timing','Escolheu Concorrente','Sumiu / Sem Resposta','Fora do Perfil','Sem Orçamento','Sem Necessidade','Outro'];
 
 const ICONS = {
  LayoutDashboard: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
@@ -1130,7 +1131,7 @@ function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, 
   React.createElement('input',{ref:excelInputRef,type:'file',accept:'.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv',className:'hidden',onChange:e=>{const f=e.target.files?.[0];if(f)importExcel(f);e.target.value='';}})
  );
  return React.createElement('aside',{ref:sidebarRef,className:'synapse-sidebar'+(sidebarOpen?' is-open':''),onMouseEnter:openSidebar,onMouseLeave:closeSidebarIfUnfocused,onFocusCapture:openSidebar,onBlurCapture:closeSidebarIfUnfocused, 'aria-label':'Navegação principal'},
-  React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},'S'),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
+  React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
   React.createElement('nav',{className:'sidebar-nav'},items.map(({key,label,IconC})=>React.createElement('button',{key,onClick:()=>setTab(key),className:tab===key?'active':'',title:label},React.createElement(IconC,{size:17}),React.createElement('span',null,label)))),
   React.createElement('div',{className:'sidebar-bottom'},React.createElement('div',{className:'sidebar-tools'},React.createElement('div',{className:'flex items-center gap-1.5 text-sm',style:{color:streak>0?'var(--ember)':'var(--muted)'}},React.createElement(Flame,{size:16,strokeWidth:2}),React.createElement('span',null,streak,' ',streak===1?'dia':'dias')),backupButtons),React.createElement('div',{className:'account-name'},React.createElement('span',{className:'account-avatar'},(user?.email||'S').slice(0,1).toUpperCase()),React.createElement('div',null,React.createElement('small',null,'Conta pessoal'),React.createElement('b',null,user?.email||'Synapse')),React.createElement('button',{onClick:onLogout,className:'top-logout'},'Sair')))
  );
@@ -1341,7 +1342,6 @@ function ClientCard({ client, expanded, onToggle, updateClient, removeClient, te
  return React.createElement("div", { className: "p-2.5 rounded text-sm", style: { background: 'var(--surface)', border: '1px solid var(--border)' } }, header, expandedContent);
 }
 
-const LOST_TAGS = ['Preço','Timing','Escolheu Concorrente','Sumiu / Sem Resposta','Fora do Perfil','Sem Orçamento','Sem Necessidade','Outro'];
 const TEMPLATE_CATEGORIES = [
  { key:'frio', label:'Frio' }, { key:'morno', label:'Morno' }, { key:'quente', label:'Quente' }, { key:'fechamento', label:'Fechamento' }
 ];

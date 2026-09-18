@@ -701,3 +701,7 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 /* Logo padrão: símbolo Synapse em fundo branco, usado de forma consistente no app. */
 .cloud-load-spinner { width:min(180px,42vw) !important; height:min(180px,42vw) !important; aspect-ratio:1 !important; background:#fff !important; }
 .cloud-load-spinner img { width:100% !important; height:100% !important; object-fit:contain !important; display:block !important; }
+
+/* Logo padrão do app na navegação: mesmo símbolo branco de fundo usado nos assets oficiais. */
+.sidebar-brand .brand-mark { background:#fff; overflow:hidden; }
+.sidebar-brand .brand-mark img { width:100%; height:100%; object-fit:contain; display:block; }
