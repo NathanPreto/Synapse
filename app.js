@@ -192,7 +192,7 @@ function AuthScreen() {
      React.createElement('h1',null,'Venda com clareza.\nDecida com presença.'),
      React.createElement('p',null,'Uma experiência única para organizar oportunidades e acompanhar sua mentalidade sem perder o foco.')
     ),
-    React.createElement('div',{className:'auth-side-footer'},'SYNAPSE · CRM + MENTALIDADE')
+    React.createElement('div',{className:'auth-side-footer'},React.createElement('span',null,'SYNAPSE · CRM + MENTALIDADE'),React.createElement('span',{className:'auth-legal-links'},React.createElement('a',{href:'privacidade.html'},'Privacidade'),React.createElement('span',{'aria-hidden':'true'},'·'),React.createElement('a',{href:'termos.html'},'Termos de Uso')))
    ),
    React.createElement('div',{className:'auth-card'},
     React.createElement(AuthBrand,null),
@@ -1148,7 +1148,7 @@ function WorkspaceHeader({tab,setTab,theme,toggleTheme,user,onLogout}) {
       avatar?React.createElement('img',{src:avatar,alt:'',referrerPolicy:'no-referrer'}):React.createElement('span',{className:'header-account-avatar-fallback'},(name||'S').slice(0,1).toUpperCase()),
       React.createElement('div',null,React.createElement('b',null,name),React.createElement('small',null,user?.email||''))
      ),
-     React.createElement('button',{onClick:()=>{setOpen(false);onLogout();},className:'header-account-logout'},'Sair da conta')
+     React.createElement('div',{className:'header-account-legal'},React.createElement('a',{href:'privacidade.html',onClick:()=>setOpen(false)},'Privacidade'),React.createElement('a',{href:'termos.html',onClick:()=>setOpen(false)},'Termos de Uso')),React.createElement('button',{onClick:()=>{setOpen(false);onLogout();},className:'header-account-logout'},'Sair da conta')
     )
    )
   )
