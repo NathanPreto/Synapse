@@ -693,3 +693,7 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .loss-grid > div { display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:0; }
 .loss-reason-label { min-width:0; overflow-wrap:anywhere; word-break:break-word; }
 .loss-reason-count { flex:0 0 auto; }
+
+/* Logo padrão do Synapse na tela de carregamento. Vetorial e responsivo. */
+.cloud-load-spinner { width:min(277px,78vw) !important; height:auto !important; aspect-ratio:277/96; background:#fff !important; display:flex !important; align-items:center !important; justify-content:center !important; }
+.cloud-load-spinner img { display:block; width:100%; height:100%; object-fit:contain; image-rendering:auto; }
