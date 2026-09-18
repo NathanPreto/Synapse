@@ -34,7 +34,6 @@
   async function askAI(payload) {
     const api = requireClient();
     const body = payload && typeof payload === 'object' ? payload : {};
-    window.SynapseFeedback?.start('Consultando a IA');
     try {
       const { data: sessionData } = await api.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
@@ -44,29 +43,29 @@
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       if (error) {
-        let detail = '';
         let code = '';
         try {
           if (error.context?.json) {
             const payload = await error.context.json();
             code = String(payload?.code || '').toUpperCase();
-            detail = payload?.error || payload?.message || '';
           }
         } catch (_) {}
         const userMessage = code === 'CONFIG_MISSING'
-          ? 'A Syn ainda não está configurada no servidor. A credencial precisa estar cadastrada no servidor.'
-          : code === 'GEMINI_AUTH'
-            ? 'A Syn não conseguiu validar sua configuração. Verifique a configuração da Syn no servidor.'
-            : code === 'GEMINI_QUOTA'
-              ? 'A Syn atingiu o limite de uso. Tente novamente em alguns instantes.'
-              : code === 'GEMINI_TIMEOUT'
-                ? 'A Syn não respondeu em até 12 segundos. A conexão está demorando além do esperado.'
-                : '';
-        throw new Error(userMessage || detail || error.message || 'Não foi possível consultar a Syn.');
+          ? 'A Syn ainda não está configurada no servidor.'
+          : code === 'UPSTREAM_AUTH'
+            ? 'A Syn não conseguiu validar sua configuração no servidor.'
+            : code === 'UPSTREAM_QUOTA'
+              ? 'A Syn atingiu um limite de uso. Tente novamente em alguns instantes.'
+              : code === 'UPSTREAM_TIMEOUT'
+                ? 'A Syn demorou mais do que o esperado para responder. Tente novamente.'
+                : code === 'UPSTREAM_UNAVAILABLE'
+                  ? 'A Syn está temporariamente indisponível. Tente novamente em alguns instantes.'
+                  : 'Não foi possível concluir a resposta da Syn agora.';
+        throw new Error(userMessage);
       }
-      if (!data?.answer) throw new Error('A IA não retornou uma resposta.');
+      if (!data?.answer) throw new Error('A Syn não retornou uma resposta.');
       return { answer: String(data.answer) };
-    } finally { window.SynapseFeedback?.end(); }
+    } finally {}
   }
   async function loadSynapseData(userId) {
     const api = requireClient();

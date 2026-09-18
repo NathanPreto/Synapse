@@ -177,7 +177,8 @@ function makePersistenceContext(online) {
 
   const failed = results.filter(r => r[0] === 'FAIL');
   for (const r of results) console.log(`[${r[0]}] ${r[1]}${r[2] ? ` — ${r[2].message}` : ''}`);
-  console.log(`\\nResumo: ${results.length - failed.length}/${results.length} testes passaram.`);
+  console.log(`\
+Resumo: ${results.length - failed.length}/${results.length} testes passaram.`);
   if (failed.length) process.exitCode = 1;
 })();
 
@@ -186,7 +187,9 @@ test('Edge Function trata CORS e preflight', () => {
   assert.match(fn, /Access-Control-Allow-Origin/);
   assert.match(fn, /req\.method === "OPTIONS"/);
   assert.match(fn, /GEMINI_API_KEY/);
-  assert.match(fn, /GEMINI_TIMEOUT_MS = 12000/);
+  assert.match(fn, /TOTAL_TIMEOUT_MS = 10500/);
+  assert.match(fn, /ATTEMPT_TIMEOUT_MS = 3000/);
+  assert.match(fn, /RETRY_DELAYS_MS = \[500, 1000\]/);
   assert.match(fn, /thinkingLevel: "low"/);
   assert.match(fn, /maxOutputTokens: 300/);
   assert.match(fn, /system_instruction/);
@@ -197,6 +200,35 @@ test('Falha da IA não é mascarada no frontend', () => {
   const app = read('app.js');
   assert.match(app, /Sua sessão expirou/);
   assert.match(app, /A Syn ainda não está configurada no servidor/);
-  assert.match(app, /credencial da IA no servidor foi recusada/);
-  assert.match(app, /A Syn não respondeu em até 12 segundos/);
+  assert.match(app, /A Syn demorou mais do que o esperado/);
+});
+
+
+
+test('Syn mantém mensagens de indisponibilidade sem expor o provedor', () => {
+  const app = read('app.js');
+  const supabase = read('services/supabase.js');
+  assert.equal(app.includes('Gemini'), false);
+  assert.equal(app.includes('gemini'), false);
+  assert.equal(supabase.includes('Gemini'), false);
+  assert.equal(supabase.includes('gemini'), false);
+  assert.equal(supabase.includes('error.message ||'), false);
+});
+
+test('Retry da Syn usa apenas falhas transitórias', () => {
+  const fn = read('supabase/functions/synapse-ai/index.ts');
+  assert.match(fn, /shouldRetry\(status: number, message = ""\)/);
+  assert.match(fn, /\[408, 500, 502, 503, 504\]/);
+  assert.match(fn, /status !== 429/);
+  assert.match(fn, /rate/);
+  assert.match(fn, /attempt < 2/);
+  assert.match(fn, /retryDelayMs\(attempt\)/);
+});
+
+test('Prompt da Syn é curto e orientado a dúvidas básicas', () => {
+  const app = read('app.js');
+  assert.match(app, /assistente virtual do Synapse/);
+  assert.match(app, /Responda em português do Brasil, de forma curta, clara, prática e amigável/);
+  assert.match(app, /Não revele detalhes técnicos da implementação/);
+  assert.match(app, /nextMessages\.slice\(-12\)/);
 });

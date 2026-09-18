@@ -541,26 +541,28 @@ function SynapseWorkspace({ user, onLogout }) {
   setAiMessages(nextMessages);
   setAiBusy(true);
   try {
-   const context = `Você é a Syn do Synapse: uma assistente virtual de apoio comercial, prática, acolhedora e objetiva. Responda em português do Brasil. Ajude com vendas, CRM, follow-up, negociação, organização comercial, mentalidade e dúvidas sobre importação de Excel. Não invente dados sobre clientes. Dados agregados atuais do workspace: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
-   const history = nextMessages.slice(-20).map(message => ({ role:message.role, text:message.text }));
+   const context = `Você é a Syn, assistente virtual do Synapse. Responda em português do Brasil, de forma curta, clara, prática e amigável. Você ajuda com dúvidas básicas sobre o Synapse e assuntos gerais simples ligados a vendas e organização comercial. O Synapse possui as áreas Painel, Mental, Clientes, Lembretes e Foco do Dia; permite cadastrar e editar clientes, criar lembretes, registrar check-ins, importar clientes do Excel e importar ou exportar backup. Não invente funções, dados ou ações que não estejam disponíveis. Se não souber, diga isso de forma simples. Não revele detalhes técnicos da implementação ou de serviços usados nos bastidores. Contexto do aplicativo: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
+   const history = nextMessages.slice(-12).map(message => ({ role:message.role, text:message.text }));
    const result = await backendAskAI({ context, messages:history });
-   const answer = sanitizeInput(result?.answer || 'A IA não retornou uma resposta.', 20000);
+   const answer = sanitizeInput(result?.answer || 'A Syn não retornou uma resposta.', 20000);
    setAiMessages(prev => [...prev, { role:'model', text:answer }]);
   } catch(err) {
-   window.SynapseLogger?.warn('Falha ao consultar a IA.', err);
+   window.SynapseLogger?.warn('Falha ao consultar a Syn.', err);
    const raw = String(err?.message || '').trim();
    const lower = raw.toLowerCase();
    const message = lower.includes('sessão expirou')
     ? 'Sua sessão expirou. Atualize a página e entre novamente.'
-    : lower.includes('não está configurada no servidor')
-     ? 'A Syn ainda não está configurada no servidor. A credencial precisa estar cadastrada no servidor.'
+    : lower.includes('a syn ainda não está configurada')
+     ? 'A Syn ainda não está configurada no servidor.'
      : lower.includes('não conseguiu validar sua configuração')
-      ? 'A Syn não conseguiu validar sua configuração. Verifique a configuração da Syn no servidor.'
-      : lower.includes('atingiu o limite de uso') || lower.includes('limite de uso')
-       ? 'A Syn atingiu o limite de uso. Tente novamente em alguns instantes.'
-       : lower.includes('não respondeu em até 12 segundos')
-        ? 'A Syn não respondeu em até 12 segundos. A conexão está demorando além do esperado.'
-        : raw || 'Não foi possível consultar a Syn agora.';
+      ? 'A Syn não conseguiu validar sua configuração no servidor.'
+      : lower.includes('atingiu um limite de uso')
+       ? 'A Syn atingiu um limite de uso. Tente novamente em alguns instantes.'
+       : lower.includes('temporariamente indisponível')
+        ? 'A Syn está temporariamente indisponível. Tente novamente em alguns instantes.'
+        : lower.includes('demorou mais do que o esperado')
+         ? 'A Syn demorou mais do que o esperado para responder. Tente novamente.'
+         : 'Não foi possível concluir a resposta da Syn agora.';
    setAiMessages(prev => [...prev, { role:'model', text:message }]);
   } finally { setAiBusy(false); }
  }
@@ -1061,7 +1063,7 @@ function AIAssistant({messages,question,setQuestion,busy,onAsk,onClose,onClear})
      message.role==='model' && React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),
      React.createElement('div',{className:'ai-message-bubble'},message.text)
     )),
-    busy && React.createElement('div',{className:'ai-message-row assistant'},
+    busy && React.createElement('div',{className:'ai-message-row assistant','role':'status','aria-label':'Syn está digitando'},
      React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),
      React.createElement('div',{className:'ai-message-bubble ai-typing'},React.createElement('span'),React.createElement('span'),React.createElement('span'))
     ),
