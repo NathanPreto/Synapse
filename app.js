@@ -533,6 +533,26 @@ function SynapseWorkspace({ user, onLogout }) {
   if (!confirm(`Foram encontrados ${imported.length} clientes.\n\nNovos: ${added}\nAtualizados: ${updated}\n\nOs clientes serão adicionados ou atualizados sem apagar os atuais. Continuar?`)) return;
   setClients(existing); setExcelReview(null); setTab('clientes'); alert(`Importação concluída.\n\nNovos clientes: ${added}\nClientes atualizados: ${updated}`);
  }
+ function formatSynMessage(text) {
+  const value = String(text || '').replace(/\r\n?/g,'\n').trim();
+  if (!value) return [{ type:'text', text:'' }];
+  const lines = value.split('\n');
+  const blocks = [];
+  let list = [];
+  const flushList = () => {
+   if (list.length) { blocks.push({ type:'list', items:list }); list=[]; }
+  };
+  lines.forEach(line => {
+   const clean = line.trim();
+   if (!clean) { flushList(); return; }
+   const listMatch = clean.match(/^(?:[-*]|\d+[.)])\s+(.+)$/);
+   if (listMatch) { list.push(listMatch[1]); return; }
+   flushList();
+   blocks.push({ type:'text', text:clean });
+  });
+  flushList();
+  return blocks;
+ }
  function getSynLocalAnswer(question) {
   const normalized = question.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   if (/^(oi|ola|bom dia|boa tarde|boa noite|hey|hello)\b/.test(normalized)) return 'Olá! Eu sou a Syn. Posso tirar dúvidas básicas sobre o Synapse e sobre organização comercial.';
@@ -553,7 +573,7 @@ function SynapseWorkspace({ user, onLogout }) {
   setAiBusy(true);
   const localAnswer = getSynLocalAnswer(question);
   if (localAnswer) {
-   setAiMessages(prev => [...prev, { role:'model', text:localAnswer }]);
+   setAiMessages(prev => [...prev, { role:'model', text:localAnswer, blocks:formatSynMessage(localAnswer) }]);
    setAiBusy(false);
    return;
   }
@@ -562,7 +582,7 @@ function SynapseWorkspace({ user, onLogout }) {
    const history = nextMessages.slice(-12).map(message => ({ role:message.role, text:message.text }));
    const result = await backendAskAI({ context, messages:history });
    const answer = sanitizeInput(result?.answer || 'A Syn não retornou uma resposta.', 20000);
-   setAiMessages(prev => [...prev, { role:'model', text:answer }]);
+   setAiMessages(prev => [...prev, { role:'model', text:answer, blocks:formatSynMessage(answer) }]);
   } catch(err) {
    window.SynapseLogger?.warn('Falha ao consultar a Syn.', err);
    const raw = String(err?.message || '').trim();
@@ -580,7 +600,7 @@ function SynapseWorkspace({ user, onLogout }) {
         : lower.includes('demorou mais do que o esperado')
          ? 'A Syn demorou mais do que o esperado para responder. Tente novamente.'
          : 'Não foi possível concluir a resposta da Syn agora.';
-   setAiMessages(prev => [...prev, { role:'model', text:message }]);
+   setAiMessages(prev => [...prev, { role:'model', text:message, blocks:formatSynMessage(message) }]);
   } finally { setAiBusy(false); }
  }
  if (loadError) {
@@ -1078,7 +1098,13 @@ function AIAssistant({messages,question,setQuestion,busy,onAsk,onClose,onClear})
     ),
     messages.map((message,index)=>React.createElement('div',{key:index,className:'ai-message-row '+(message.role==='user'?'user':'assistant')},
      message.role==='model' && React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),
-     React.createElement('div',{className:'ai-message-bubble'},message.text)
+     React.createElement('div',{className:'ai-message-bubble'},
+      (message.blocks || formatSynMessage(message.text)).map((block,blockIndex)=>
+       block.type==='list'
+        ? React.createElement('ol',{key:blockIndex,className:'ai-message-list'},block.items.map((item,itemIndex)=>React.createElement('li',{key:itemIndex},item)))
+        : React.createElement('p',{key:blockIndex},block.text)
+      )
+     )
     )),
     busy && React.createElement('div',{className:'ai-message-row assistant','role':'status','aria-label':'Syn está digitando'},
      React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),

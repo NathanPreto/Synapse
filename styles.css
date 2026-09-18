@@ -746,3 +746,9 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .ai-send:disabled{opacity:.45}
 @media(max-width:560px){.ai-chat-modal{width:100%;height:100dvh;max-height:100dvh;border-radius:0}.ai-chat-body{padding:18px 12px}.ai-message-row{max-width:92%}.ai-chat-header{padding-top:max(12px,env(safe-area-inset-top))}}
 @media(prefers-reduced-motion:reduce){.ai-typing span{animation:none}}
+
+.ai-message-bubble p{margin:0 0 8px}
+.ai-message-bubble p:last-child{margin-bottom:0}
+.ai-message-list{margin:0 0 8px;padding-left:20px}
+.ai-message-list:last-child{margin-bottom:0}
+.ai-message-list li{margin:4px 0}

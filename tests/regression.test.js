@@ -250,3 +250,19 @@ test('Syn usa fallback de modelos estáveis para falhas transitórias', () => {
   assert.match(fn, /attempt < 2/);
   assert.match(fn, /console\.warn\("Syn upstream response"/);
 });
+
+
+test('Mensagens da Syn são formatadas sem interpretar HTML ou SVG', () => {
+  const app = read('app.js');
+  assert.match(app, /function formatSynMessage\(text\)/);
+  assert.match(app, /formatSynMessage\(answer\)/);
+  assert.match(app, /ai-message-list/);
+  assert.equal(app.includes("dangerouslySetInnerHTML"), false);
+});
+
+test('Renderizador da Syn transforma listas em elementos seguros', () => {
+  const app = read('app.js');
+  assert.match(app, /clean\.match/);
+  assert.match(app, /React\.createElement\('ol'/);
+  assert.match(app, /React\.createElement\('li'/);
+});
