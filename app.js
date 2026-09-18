@@ -1,8 +1,9 @@
 const { useState, useEffect, useMemo } = React;
 /* ---------- armazenamento multiplataforma e tolerante a bloqueios ---------- */
 const { persistentStorage, storage, safeSessionGet, safeSessionSet } = window.SynapseStorage;
-const { auth, loadSynapseData } = window.SynapseBackend;
-const persistence = window.SynapsePersistence;
+const { auth, loadSynapseData } = window.SynapseBackend || {};
+const persistence = window.SynapsePersistence || {};
+
 const { sanitizeInput, sanitizeRecord } = window.SynapseSecurity;
 const LOST_TAGS = ['Preço','Timing','Escolheu Concorrente','Sumiu / Sem Resposta','Fora do Perfil','Sem Orçamento','Sem Necessidade','Outro'];
 
@@ -286,6 +287,7 @@ function App() {
 function AuthLoading(){ return React.createElement('main',{className:'auth-screen'},React.createElement('div',{className:'auth-card auth-card-single auth-loading'},React.createElement(AuthBrand,null),React.createElement('div',{className:'auth-copy'},'Carregando seu espaço...'))); }
 
 function SynapseWorkspace({ user, onLogout }) {
+ if (!auth || typeof loadSynapseData !== 'function' || typeof persistence.queueUpsert !== 'function') return React.createElement('div',{className:'auth-screen'},React.createElement('div',{className:'auth-card auth-card-single'},React.createElement('div',{className:'auth-copy'},'O Synapse não conseguiu iniciar. Atualize a página e tente novamente.')));
  const [loaded, setLoaded] = useState(false);
  const [loadError, setLoadError] = useState('');
  const [loadNonce, setLoadNonce] = useState(0);
