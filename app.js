@@ -424,7 +424,7 @@ function SynapseWorkspace({ user, onLogout }) {
  }
  function importBackup(file) {
   window.SynapseFeedback?.start('Importando backup');
-  SynapseSpreadsheet.readText(file).then(raw => {
+  SynapseSpreadsheet.readText(file).then(async raw => {
    try {
     const data = JSON.parse(raw);
     if (!confirm('Importar este backup vai substituir todos os dados atuais. Continuar?')) return;
