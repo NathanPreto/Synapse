@@ -1,7 +1,7 @@
 const { useState, useEffect, useMemo } = React;
 /* ---------- armazenamento multiplataforma e tolerante a bloqueios ---------- */
 const { persistentStorage, storage } = window.SynapseStorage;
-const { auth, loadSynapseData, askAI: backendAskAI } = window.SynapseBackend || {};
+const { auth, loadSynapseData, askAI: backendAskAI, deleteAccount: backendDeleteAccount } = window.SynapseBackend || {};
 const persistence = window.SynapsePersistence || {};
 
 const { sanitizeInput, sanitizeRecord } = window.SynapseSecurity;
@@ -307,6 +307,8 @@ function SynapseWorkspace({ user, onLogout }) {
  const [aiQuestion, setAiQuestion] = useState('');
  const [aiMessages, setAiMessages] = useState([]);
  const [aiBusy, setAiBusy] = useState(false);
+ const [settingsOpen, setSettingsOpen] = useState(false);
+ const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
  const [operationBusy, setOperationBusy] = useState(false);
  const busyTimerRef = React.useRef(null);
  const [runtimeError, setRuntimeError] = useState('');
@@ -547,6 +549,23 @@ function SynapseWorkspace({ user, onLogout }) {
   if (/como usar|por onde comeco|como funciona/.test(normalized)) return 'Comece pelo Painel para ter uma visão geral. Depois, use Clientes para organizar sua carteira e Lembretes para registrar os próximos passos.';
   return '';
  }
+ async function deleteAccount() {
+  if (deleteAccountBusy || typeof backendDeleteAccount !== 'function') return;
+  setDeleteAccountBusy(true);
+  try {
+   await backendDeleteAccount();
+   try {
+    const keys = Object.keys(localStorage);
+    keys.filter(key => key.startsWith('synapse-') || ['mental-vendas-theme','mindset-checkins','mindset-clients','mindset-reminders','mental-vendas-desidentificacao','mental-vendas-templates','synapse-layout','synapse-main','synapse-sidebar'].includes(key))
+      .forEach(key => localStorage.removeItem(key));
+   } catch (_) {}
+   setSettingsOpen(false);
+   await auth.signOut();
+  } catch (error) {
+   window.SynapseLogger?.warn('Falha ao excluir conta.', error);
+   throw error;
+  } finally { setDeleteAccountBusy(false); }
+ }
  async function askAI() {
   const question = aiQuestion.trim();
   if (!question || aiBusy || typeof backendAskAI !== 'function') return;
@@ -613,9 +632,9 @@ function SynapseWorkspace({ user, onLogout }) {
   (syncError || runtimeError) && React.createElement('div',{className:'sync-banner error'},syncError || runtimeError),
   operationBusy && React.createElement('div',{className:'operation-progress','role':'status','aria-label':'Processando'},React.createElement('span',{className:'operation-progress-line'})),
   React.createElement('div',{className:'synapse-layout'+(sidebarOpen?' is-sidebar-open':'')},
-  React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange:setSidebarOpen }),
+  React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSettings:()=>setSettingsOpen(true), onSidebarChange:setSidebarOpen }),
   React.createElement('main',{className:'synapse-main'},
-  React.createElement(WorkspaceHeader,{tab,setTab,theme,toggleTheme,user,onLogout}),
+  React.createElement(WorkspaceHeader,{tab,setTab,theme,toggleTheme,user,onLogout,onSettings:()=>setSettingsOpen(true)}),
   React.createElement('button', { onClick: () => setAiOpen(true), className: 'ai-fab', title: 'Abrir Syn' }, React.createElement(Sparkles, { size: 17 }), ' Syn'),
   React.createElement('div', { className: 'workspace-content px-4 sm:px-6 lg:px-8 py-6 w-full max-w-none' },
    tab === 'painel' && React.createElement(Painel, { streak, todayCheckin, clients, followUps, pendingReminders, correlation, lossReasons, dailyFocus, pinnedPhrase, goTo: setTab, onCalm: () => setCalmOpen(true) }),
@@ -628,7 +647,8 @@ function SynapseWorkspace({ user, onLogout }) {
   migrationRequested && React.createElement(MigrationModal,{onImport:migrateLocalData,onSkip:()=>setMigrationRequested(false)}),
   excelReview && React.createElement(ExcelReviewModal, { review: excelReview, setReview: setExcelReview, onImport: completeExcelImport }),
   calmOpen && React.createElement(CalmMode, { onClose: () => setCalmOpen(false) }),
-  aiOpen && React.createElement(AIAssistant, { messages: aiMessages, question: aiQuestion, setQuestion: setAiQuestion, busy: aiBusy, onAsk: askAI, onClear: () => { setAiMessages([]); setAiQuestion(''); }, onClose: () => setAiOpen(false) })
+  aiOpen && React.createElement(AIAssistant, { messages: aiMessages, question: aiQuestion, setQuestion: setAiQuestion, busy: aiBusy, onAsk: askAI, onClear: () => { setAiMessages([]); setAiQuestion(''); }, onClose: () => setAiOpen(false) }),
+  settingsOpen && React.createElement(AccountSettingsModal, { user, busy:deleteAccountBusy, onClose:()=>setSettingsOpen(false), onDelete:deleteAccount })
  );
 }
 function Shell({ children, theme }) {
@@ -1130,7 +1150,7 @@ function AIAssistant({messages,question,setQuestion,busy,onAsk,onClose,onClear})
    )
   )
  );}
-function WorkspaceHeader({tab,setTab,theme,toggleTheme,user,onLogout}) {
+function WorkspaceHeader({tab,setTab,theme,toggleTheme,user,onLogout,onSettings}) {
  const labels={painel:'Seu dia, em movimento.',mental:'Clareza para seguir em frente.',clientes:'Clientes e oportunidades.',lembretes:'Nada importante passa despercebido.',foco:'Foco no que move o dia.'};
  const now=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
  const [open,setOpen] = useState(false);
@@ -1148,13 +1168,13 @@ function WorkspaceHeader({tab,setTab,theme,toggleTheme,user,onLogout}) {
       avatar?React.createElement('img',{src:avatar,alt:'',referrerPolicy:'no-referrer'}):React.createElement('span',{className:'header-account-avatar-fallback'},(name||'S').slice(0,1).toUpperCase()),
       React.createElement('div',null,React.createElement('b',null,name),React.createElement('small',null,user?.email||''))
      ),
-     React.createElement('div',{className:'header-account-legal'},React.createElement('a',{href:'privacidade.html',onClick:()=>setOpen(false)},'Privacidade'),React.createElement('a',{href:'termos.html',onClick:()=>setOpen(false)},'Termos de Uso')),React.createElement('button',{onClick:()=>{setOpen(false);onLogout();},className:'header-account-logout'},'Sair da conta')
+     React.createElement('div',{className:'header-account-legal'},React.createElement('a',{href:'privacidade.html',onClick:()=>setOpen(false)},'Privacidade'),React.createElement('a',{href:'termos.html',onClick:()=>setOpen(false)},'Termos de Uso')),React.createElement('button',{onClick:()=>{setOpen(false);onSettings?.();},className:'header-account-settings'},'Configurações'),React.createElement('button',{onClick:()=>{setOpen(false);onLogout();},className:'header-account-logout'},'Sair da conta')
     )
    )
   )
  );
 }
-function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange }) {
+function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSettings, onSidebarChange }) {
  const fileInputRef = React.useRef(null);
  const sidebarRef = React.useRef(null);
  const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -1181,7 +1201,29 @@ function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, 
  return React.createElement('aside',{ref:sidebarRef,className:'synapse-sidebar'+(sidebarOpen?' is-open':''),onMouseEnter:openSidebar,onMouseLeave:closeSidebarIfUnfocused,onFocusCapture:openSidebar,onBlurCapture:closeSidebarIfUnfocused, 'aria-label':'Navegação principal'},
   React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=12',alt:'Synapse'})),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
   React.createElement('nav',{className:'sidebar-nav'},items.map(({key,label,IconC})=>React.createElement('button',{key,onClick:()=>setTab(key),className:tab===key?'active':'',title:label},React.createElement(IconC,{size:17}),React.createElement('span',null,label)))),
-  React.createElement('div',{className:'sidebar-bottom'},React.createElement('div',{className:'sidebar-tools'},React.createElement('div',{className:'flex items-center gap-1.5 text-sm',style:{color:streak>0?'var(--ember)':'var(--muted)'}},React.createElement(Flame,{size:16,strokeWidth:2}),React.createElement('span',null,streak,' ',streak===1?'dia':'dias')),backupButtons),React.createElement('div',{className:'account-name'},React.createElement('span',{className:'account-avatar'},(user?.email||'S').slice(0,1).toUpperCase()),React.createElement('div',null,React.createElement('small',null,'Conta pessoal'),React.createElement('b',null,user?.email||'Synapse')),React.createElement('button',{onClick:onLogout,className:'top-logout'},'Sair')))
+  React.createElement('div',{className:'sidebar-bottom'},React.createElement('div',{className:'sidebar-tools'},React.createElement('div',{className:'flex items-center gap-1.5 text-sm',style:{color:streak>0?'var(--ember)':'var(--muted)'}},React.createElement(Flame,{size:16,strokeWidth:2}),React.createElement('span',null,streak,' ',streak===1?'dia':'dias')),backupButtons),React.createElement('div',{className:'account-name'},React.createElement('span',{className:'account-avatar'},(user?.email||'S').slice(0,1).toUpperCase()),React.createElement('div',null,React.createElement('small',null,'Conta pessoal'),React.createElement('b',null,user?.email||'Synapse')),React.createElement('button',{onClick:onSettings,className:'top-settings',title:'Configurações da conta'},'Config.'),React.createElement('button',{onClick:onLogout,className:'top-logout'},'Sair')))
+ );
+}
+function AccountSettingsModal({user,busy,onClose,onDelete}) {
+ const [confirming,setConfirming]=useState(false);
+ const [confirmation,setConfirmation]=useState('');
+ const [error,setError]=useState('');
+ const submit=async()=>{
+  if(confirmation.trim().toUpperCase()!=='EXCLUIR')return;
+  setError('');
+  try{await onDelete();}catch(e){setError(String(e?.message||'Não foi possível excluir a conta agora.'));}
+ };
+ return React.createElement('div',{className:'modal-overlay',role:'dialog','aria-modal':'true','aria-labelledby':'account-settings-title'},
+  React.createElement('div',{className:'account-settings-modal'},
+   React.createElement('div',{className:'account-settings-header'},React.createElement('div',null,React.createElement('div',{className:'workspace-eyebrow'},'Conta'),React.createElement('h2',{id:'account-settings-title'},'Configurações')),React.createElement('button',{onClick:onClose,className:'modal-close','aria-label':'Fechar'},'×')),
+   React.createElement('div',{className:'account-settings-section'},React.createElement('div',{className:'account-settings-label'},'Conta'),React.createElement('div',{className:'account-settings-value'},user?.email||'Conta pessoal'),React.createElement('p',null,'Gerencie o acesso e a exclusão dos seus dados pelo Synapse.')),
+   React.createElement('div',{className:'account-settings-section account-settings-danger'},
+    React.createElement('div',{className:'account-settings-label'},'Excluir conta'),
+    !confirming
+      ? React.createElement(React.Fragment,null,React.createElement('p',null,'A exclusão remove sua conta e os dados associados ao Synapse. Esta ação não pode ser desfeita.'),React.createElement('button',{onClick:()=>setConfirming(true),className:'account-delete-button'},'Excluir minha conta'))
+      : React.createElement(React.Fragment,null,React.createElement('p',null,'Para confirmar, digite EXCLUIR. Recomendamos baixar seu backup antes de continuar.'),React.createElement('input',{value:confirmation,onChange:e=>setConfirmation(e.target.value),placeholder:'EXCLUIR',autoFocus:true,disabled:busy,autoComplete:'off','aria-label':'Digite EXCLUIR para confirmar'}),error&&React.createElement('div',{className:'auth-alert error'},error),React.createElement('div',{className:'account-settings-actions'},React.createElement('button',{onClick:()=>{setConfirming(false);setConfirmation('');setError('')},disabled:busy,className:'account-cancel-button'},'Cancelar'),React.createElement('button',{onClick:submit,disabled:busy||confirmation.trim().toUpperCase()!=='EXCLUIR',className:'account-delete-button'},busy?'Excluindo...':'Confirmar exclusão')))
+   )
+  )
  );
 }
 function Section({ title, right, children }) {
