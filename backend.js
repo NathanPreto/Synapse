@@ -1,18 +1,15 @@
 (function(){
-  // Fronteira entre a interface e a implementação de backend.
-  // Nesta etapa, o adaptador ainda usa Supabase por baixo; o frontend não precisa conhecer essa implementação.
+  // Contrato público consumido pelo frontend.
+  // A implementação concreta fica isolada em services/supabase.js.
   const provider = window.SynapseSupabase;
-  const auth = provider?.client?.auth || null;
   if (!provider) {
-    window.SynapseLogger?.warn('Adaptador de backend iniciado sem o provedor de dados.');
+    window.SynapseLogger?.warn('Backend iniciado sem um provedor de dados.');
   }
   window.SynapseBackend = {
-    auth,
+    auth: provider?.auth || null,
     syncUserRows: provider?.syncUserRows,
     deleteCloudRow: provider?.deleteCloudRow,
     syncSettings: provider?.syncSettings,
-    loadSynapseData: provider?.loadSynapseData,
-    requireClient: provider?.requireClient,
-    provider: 'supabase'
+    loadSynapseData: provider?.loadSynapseData
   };
 })();

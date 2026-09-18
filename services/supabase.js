@@ -52,5 +52,5 @@
       };
     } finally { window.SynapseFeedback?.end(); }
   }
-  window.SynapseSupabase = { client, url, key, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData, requireClient };
+  window.SynapseSupabase = { auth: client?.auth || null, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData };
 })();

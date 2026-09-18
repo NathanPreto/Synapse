@@ -6,7 +6,10 @@ CRM de vendas + mentalidade comercial, agora com autenticação e persistência 
 
 - `index.html` - entrada da aplicação
 - `styles.css` - sistema visual e responsividade
-- `app.js` - aplicação React, autenticação, CRM, mentalidade e sincronização
+- `app.js` - aplicação React e regras da interface
+- `backend.js` - contrato público entre frontend e backend
+- `services/supabase.js` - implementação do backend sobre Supabase
+- `synapse-runtime.js` - utilidades de runtime, segurança, armazenamento local e planilhas
 - `config.js` - URL e publishable key públicas do Supabase
 - `supabase.sql` - tabelas, RLS, permissões e trigger de perfil
 
@@ -55,12 +58,10 @@ A refatoração preserva `styles.css` e `config.js` byte a byte. O objetivo foi 
 
 ### Organização
 
-- `core/logger.js` — logging centralizado, captura de `error` e `unhandledrejection` e eventos de feedback.
-- `core/sanitize.js` — `sanitizeInput` e sanitização de registros externos antes de entrarem no estado da aplicação.
-- `services/storage.js` — armazenamento local/session com fallback seguro.
-- `services/supabase.js` — autenticação de dados, leitura, upsert e exclusão por usuário.
-- `services/spreadsheet.js` — leitura de arquivos, limite de 15 MB, validações e processamento da planilha.
-- `app.js` — componentes React, estado e regras de negócio da interface.
+- `synapse-runtime.js` — logging, sanitização, armazenamento local e processamento de planilhas usados pelo runtime.
+- `services/supabase.js` — implementação concreta do backend sobre Supabase; o cliente Supabase permanece encapsulado neste módulo.
+- `backend.js` — contrato público consumido pelo frontend, sem expor o cliente Supabase.
+- `app.js` — componentes React, estado e regras da interface.
 
 ### Segurança e dados
 
