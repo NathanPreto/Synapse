@@ -121,7 +121,7 @@ function GoogleMark() {
 }
 function AuthBrand() {
  return React.createElement('div',{className:'auth-brand'},
-  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'synapse-logo.svg?v=7',alt:'Synapse'})),
+  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),
   React.createElement('div',{className:'auth-brand-copy'},
    React.createElement('div',{className:'auth-title'},'Synapse'),
    React.createElement('div',{className:'auth-subtitle'},'Gestão comercial e mentalidade')
@@ -183,7 +183,7 @@ function AuthScreen() {
  return React.createElement('main',{className:'auth-screen'},
   React.createElement('section',{className:'auth-shell'},
    React.createElement('div',{className:'auth-side'},
-    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'synapse-logo.svg?v=7',alt:'Synapse'})),
+    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),
     React.createElement('div',{className:'auth-side-content'},
      React.createElement('div',{className:'auth-kicker'},'Seu espaço comercial'),
      React.createElement('h1',null,'Venda com clareza.\nDecida com presença.'),
@@ -402,7 +402,7 @@ function SynapseWorkspace({ user, onLogout }) {
   const followItems = followUps.map(c => ({ type:'client', id:c.id, text:`Dar um oi acolhedor para ${c.name}`, due:today, priority:c.idle >= 7 ? 5 : c.idle >= 5 ? 4 : 2, clientId:c.id, idle:c.idle }));
   return [...overdue, ...reminderItems, ...followItems].sort((a,b)=>b.priority-a.priority || (b.idle||0)-(a.idle||0)).slice(0,6);
  }, [reminders, followUps]);
- const lossReasons = useMemo(() => { const counts={}; clients.forEach(c => { (Array.isArray(c.lostTags)?c.lostTags:[]).forEach(t => { const label=String(t||'').trim(); if(label) counts[label]=(counts[label]||0)+1; }); }); return Object.entries(counts).sort((a,b)=>b[1]-a[1]); }, [clients]);
+ const lossReasons = useMemo(() => { const counts={}; clients.forEach(c => { (Array.isArray(c.lostTags)?c.lostTags:[]).forEach(t => { const label=String(t||'').trim(); if(label && LOST_TAGS.includes(label)) counts[label]=(counts[label]||0)+1; }); }); return Object.entries(counts).sort((a,b)=>b[1]-a[1]); }, [clients]);
  const correlation = useMemo(() => {
  const checkinDates = new Set(checkins.map(c => c.date));
  let closedWith = 0, closedWithout = 0, daysWith = checkinDates.size;
@@ -611,7 +611,7 @@ function SynapseWorkspace({ user, onLogout }) {
   return React.createElement(Shell, { theme },
    React.createElement('div', { className: 'cloud-load-state' },
     React.createElement('div',{className:'cloud-load-card loading'},
-     React.createElement('div',{className:'cloud-load-spinner'},React.createElement('img',{src:'brand-lockup.svg?v=8',alt:'Synapse'})),
+     React.createElement('div',{className:'cloud-load-spinner'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),
      React.createElement('h2',null,'Carregando seu espaço'),
      React.createElement('p',null,'Buscando seus dados com segurança.')
     )
