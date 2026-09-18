@@ -11,6 +11,7 @@
     deleteCloudRow: provider?.deleteCloudRow,
     syncSettings: provider?.syncSettings,
     loadSynapseData: provider?.loadSynapseData,
-    askAI: provider?.askAI
+    askAI: provider?.askAI,
+    deleteAccount: provider?.deleteAccount
   };
 })();
