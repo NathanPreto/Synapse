@@ -306,13 +306,24 @@ function SynapseWorkspace({ user, onLogout }) {
  const [aiAnswer, setAiAnswer] = useState('');
  const [aiBusy, setAiBusy] = useState(false);
  const [operationBusy, setOperationBusy] = useState(false);
+ const busyTimerRef = React.useRef(null);
  const [runtimeError, setRuntimeError] = useState('');
  useEffect(() => {
-  const onBusy = event => setOperationBusy(!!event.detail?.busy);
+  const onBusy = event => {
+   const isBusy = !!event.detail?.busy;
+   if (isBusy) {
+    if (busyTimerRef.current) clearTimeout(busyTimerRef.current);
+    busyTimerRef.current = setTimeout(() => setOperationBusy(true), 800);
+   } else {
+    if (busyTimerRef.current) clearTimeout(busyTimerRef.current);
+    busyTimerRef.current = null;
+    setOperationBusy(false);
+   }
+  };
   const onError = event => { const message = event.detail?.message || 'Erro inesperado em tempo de execução.'; setRuntimeError(message); setTimeout(() => setRuntimeError(''), 6500); };
   window.addEventListener('synapse:busy', onBusy);
   window.addEventListener('synapse:error', onError);
-  return () => { window.removeEventListener('synapse:busy', onBusy); window.removeEventListener('synapse:error', onError); };
+  return () => { if (busyTimerRef.current) clearTimeout(busyTimerRef.current); window.removeEventListener('synapse:busy', onBusy); window.removeEventListener('synapse:error', onError); };
  }, []);
  useEffect(() => { try { if (persistentStorage) persistentStorage.setItem('mental-vendas-theme', theme); } catch (e) {} }, [theme]);
  const toggleTheme = () => setTheme(v => v === 'dark' ? 'light' : 'dark');
@@ -621,7 +632,7 @@ function SynapseWorkspace({ user, onLogout }) {
  }
  return React.createElement(Shell, { theme },
   (syncError || runtimeError) && React.createElement('div',{className:'sync-banner error'},syncError || runtimeError),
-  operationBusy && React.createElement('div',{className:'sync-banner loading'},'Processando…'),
+  operationBusy && React.createElement('div',{className:'operation-progress','role':'status','aria-label':'Processando'},React.createElement('span',{className:'operation-progress-line'})),
   React.createElement('div',{className:'synapse-layout'+(sidebarOpen?' is-sidebar-open':'')},
   React.createElement(TopBar, { streak, tab, setTab, exportBackup, importBackup, importExcel, theme, toggleTheme, user, onLogout, onSidebarChange:setSidebarOpen }),
   React.createElement('main',{className:'synapse-main'},
