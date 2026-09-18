@@ -438,25 +438,10 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 
 /* Mobile/tablet: sidebar remains expanded and unchanged. */
 @media (max-width: 860px), (hover: none) {
-  .synapse-sidebar,
-  .synapse-sidebar.is-open {
-    width: auto;
-    padding: 14px 16px;
-    box-shadow: none;
-    overflow: visible;
-    transition: none;
-  }
-
-  .sidebar-brand > div:last-child,
-  .sidebar-tools > div:first-child,
-  .account-name > div,
-  .sidebar-nav button > span {
-    max-width: none;
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-    overflow: visible;
-  }
+  .clientes-ui .cliente-stage-toggle { min-width:30px; min-height:30px; touch-action:manipulation; }
+  .clientes-ui .cliente-stage-body { overflow:hidden; }
+  .clientes-ui .cliente-stage.is-collapsed .cliente-stage-body { grid-template-rows:0fr; opacity:.35; overflow:hidden; }
+  .clientes-ui .cliente-stage.is-collapsed .cliente-stage-header { margin-bottom:0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -703,3 +688,8 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
     transition: none !important;
   }
 }
+
+/* Motivos de perda: texto e quantidade permanecem legíveis em qualquer largura. */
+.loss-grid > div { display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:0; }
+.loss-reason-label { min-width:0; overflow-wrap:anywhere; word-break:break-word; }
+.loss-reason-count { flex:0 0 auto; }

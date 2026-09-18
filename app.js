@@ -121,7 +121,7 @@ function GoogleMark() {
 }
 function AuthBrand() {
  return React.createElement('div',{className:'auth-brand'},
-  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'synapse-mark.png',alt:'Synapse'})),
+  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'synapse-logo.svg?v=7',alt:'Synapse'})),
   React.createElement('div',{className:'auth-brand-copy'},
    React.createElement('div',{className:'auth-title'},'Synapse'),
    React.createElement('div',{className:'auth-subtitle'},'Gestão comercial e mentalidade')
@@ -183,7 +183,7 @@ function AuthScreen() {
  return React.createElement('main',{className:'auth-screen'},
   React.createElement('section',{className:'auth-shell'},
    React.createElement('div',{className:'auth-side'},
-    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'synapse-mark.png',alt:'Synapse'})),
+    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'synapse-logo.svg?v=7',alt:'Synapse'})),
     React.createElement('div',{className:'auth-side-content'},
      React.createElement('div',{className:'auth-kicker'},'Seu espaço comercial'),
      React.createElement('h1',null,'Venda com clareza.\nDecida com presença.'),
@@ -402,7 +402,7 @@ function SynapseWorkspace({ user, onLogout }) {
   const followItems = followUps.map(c => ({ type:'client', id:c.id, text:`Dar um oi acolhedor para ${c.name}`, due:today, priority:c.idle >= 7 ? 5 : c.idle >= 5 ? 4 : 2, clientId:c.id, idle:c.idle }));
   return [...overdue, ...reminderItems, ...followItems].sort((a,b)=>b.priority-a.priority || (b.idle||0)-(a.idle||0)).slice(0,6);
  }, [reminders, followUps]);
- const lossReasons = useMemo(() => { const counts={}; clients.forEach(c => (c.lostTags||[]).forEach(t => { counts[t]=(counts[t]||0)+1; })); return Object.entries(counts).sort((a,b)=>b[1]-a[1]); }, [clients]);
+ const lossReasons = useMemo(() => { const counts={}; clients.forEach(c => { (Array.isArray(c.lostTags)?c.lostTags:[]).forEach(t => { const label=String(t||'').trim(); if(label) counts[label]=(counts[label]||0)+1; }); const freeReason=String(c.lostReason||'').trim(); if(freeReason) counts[freeReason]=(counts[freeReason]||0)+1; }); return Object.entries(counts).sort((a,b)=>b[1]-a[1]); }, [clients]);
  const correlation = useMemo(() => {
  const checkinDates = new Set(checkins.map(c => c.date));
  let closedWith = 0, closedWithout = 0, daysWith = checkinDates.size;
@@ -435,6 +435,7 @@ function SynapseWorkspace({ user, onLogout }) {
  }
  function updateClient(id, patch) {
  const cleanPatch = sanitizeRecord(patch,['name','contact','notes','lostReason']);
+ if (Array.isArray(patch.lostTags)) cleanPatch.lostTags = patch.lostTags.map(tag => sanitizeInput(tag,100));
  setClients(prev => prev.map(c => {
  if (c.id !== id)
  return c;
@@ -628,7 +629,7 @@ function SynapseWorkspace({ user, onLogout }) {
   React.createElement('div', { className: 'workspace-content px-4 sm:px-6 lg:px-8 py-6 w-full max-w-none' },
    tab === 'painel' && React.createElement(Painel, { streak, todayCheckin, clients, followUps, pendingReminders, correlation, lossReasons, dailyFocus, pinnedPhrase, goTo: setTab, onCalm: () => setCalmOpen(true) }),
    tab === 'mental' && React.createElement(Mental, { checkins, todayCheckin, saveCheckin, deleteCheckin, justSaved, desidentificationEntries, setDesidentificationEntries, pinnedPhrase, setPinnedPhrase }),
-   tab === 'clientes' && React.createElement(Clientes, { clients, addClient, updateClient, removeClient, importExcel, templates, setTemplates }),
+   tab === 'clientes' && React.createElement(Clientes, { clients, addClient, updateClient, removeClient, importExcel, templates, setTemplates, userId: user.id }),
    tab === 'lembretes' && React.createElement(Lembretes, { followUps, reminders, addReminder, toggleReminder, updateReminder, removeReminder, markContacted: (id) => updateClient(id, { lastContact: todayStr() }), clients }),
    tab === 'foco' && React.createElement(FocoDoDia, { items: dailyFocus, reminders, toggleReminder, goTo: setTab, clients }),
   )),
@@ -1142,7 +1143,7 @@ function Section({ title, right, children }) {
  children));
 }
 function FocusSection({ dailyFocus, goTo }) { const rows=dailyFocus.slice(0,3).map(item=>React.createElement('div',{key:item.type+'-'+item.id,className:'focus-item flex items-center gap-3 p-3 rounded text-sm',style:{background:'var(--surface)',border:'1px solid var(--border)'}},React.createElement('div',{className:'focus-dot',style:{background:item.type==='client'?'var(--teal)':'var(--blue)'}}),React.createElement('div',{className:'flex-1 min-w-0'},item.text),React.createElement('div',{className:'text-xs',style:{color:'var(--muted)'}},item.type==='client'?item.idle+'d':'hoje'))); return React.createElement(Section,{title:'Foco do Dia',right:React.createElement('button',{onClick:()=>goTo('foco'),className:'text-xs',style:{color:'var(--teal)'}},'ver tudo →')},rows.length?React.createElement('div',{className:'space-y-2'},rows):React.createElement('div',{className:'text-sm',style:{color:'var(--muted)'}},'Nada precisa ser priorizado agora.')); }
-function LossSection({ lossReasons }) { const rows=lossReasons.slice(0,5).map(([reason,n])=>React.createElement('div',{key:reason,className:'p-3 rounded text-sm',style:{background:'var(--surface)',border:'1px solid var(--border)'}},reason+' ',React.createElement('b',{style:{color:'var(--muted)'}},n))); return lossReasons.length?React.createElement(Section,{title:'Motivos de perda'},React.createElement('div',{className:'loss-grid'},rows)):null; }
+function LossSection({ lossReasons }) { const rows=lossReasons.slice(0,5).map(([reason,n])=>React.createElement('div',{key:reason,className:'p-3 rounded text-sm',style:{background:'var(--surface)',border:'1px solid var(--border)'}},React.createElement('span',{className:'loss-reason-label'},reason),React.createElement('b',{className:'loss-reason-count',style:{color:'var(--muted)'}},n))); return lossReasons.length?React.createElement(Section,{title:'Motivos de perda'},React.createElement('div',{className:'loss-grid'},rows)):null; }
 function PainelHoje({ todayCheckin, pinnedPhrase, onCalm, goTo }) { const children=[]; if(pinnedPhrase) children.push(React.createElement('div',{key:'pin',className:'pinned-phrase mb-3',style:{background:'var(--surface2)',border:'1px solid var(--border)'}},React.createElement('div',{className:'text-xs',style:{color:'var(--teal)'}},'Frase de hoje'),React.createElement('div',{className:'text-sm mt-1',style:{fontWeight:600}},pinnedPhrase.text))); if(todayCheckin) children.push(React.createElement('div',{key:'check',className:'text-sm',style:{color:'var(--muted)'}},'Mentalidade de hoje',React.createElement('div',{className:'mt-1',style:{color:'var(--text)',fontSize:15}},todayCheckin.identity||''))); else children.push(React.createElement('button',{key:'go',onClick:()=>goTo('mental'),className:'w-full p-4 rounded text-left',style:{background:'var(--surface)',border:'1px dashed var(--border)',color:'var(--teal)'}},'Ainda não fez o check-in de hoje. Que tal começar por aqui?')); return React.createElement(Section,{title:'Hoje',right:React.createElement('button',{onClick:onCalm,className:'calm-button px-3 py-2 rounded text-xs flex items-center gap-1.5',style:{background:'var(--surface2)',color:'var(--teal)',border:'1px solid var(--border)'}},React.createElement(Wind,{size:15}),' Modo Calma')},React.createElement('div',{className:'p-4 rounded',style:{background:'var(--surface)',border:'1px solid var(--border)'}},children)); }
 function PainelAcoes({ followUps, pendingReminders, goTo }) { const rows=[]; followUps.slice(0,3).forEach(c=>rows.push(React.createElement('div',{key:'c'+c.id,className:'flex items-center justify-between p-3 rounded text-sm',style:{background:'var(--surface)',border:'1px solid var(--border)'}},React.createElement('span',null,React.createElement('b',null,c.name),' está há ',c.idle,' dias sem contato. Que tal dar um oi acolhedor hoje?'),React.createElement('button',{onClick:()=>goTo('lembretes'),style:{color:'var(--teal)'}},'ver →')))); pendingReminders.filter(r=>r.due&&r.due<todayStr()).slice(0,3).forEach(r=>rows.push(React.createElement('div',{key:'r'+r.id,className:'flex items-center justify-between p-3 rounded text-sm',style:{background:'var(--surface)',border:'1px solid var(--border)'}},React.createElement('span',{style:{color:'var(--muted)'}},r.text),React.createElement('button',{onClick:()=>goTo('lembretes'),style:{color:'var(--teal)'}},'ver →')))); return React.createElement(Section,{title:'Ações sugeridas'},rows.length?React.createElement('div',{className:'space-y-2'},rows):React.createElement('div',{className:'text-sm',style:{color:'var(--muted)'}},'Nada parado no momento. O pipeline está em dia. Siga no seu ritmo.')); }
 function PainelPipeline({ clients }) { const counts=STAGES.map(s=>({...s,n:clients.filter(c=>c.stage===s.key).length})); const maxN=Math.max(1,...counts.map(s=>s.n)); const rows=counts.map(s=>React.createElement('div',{key:s.key,className:'flex items-center gap-3 text-sm'},React.createElement('div',{className:'w-28 shrink-0',style:{color:'var(--muted)'}},s.label),React.createElement('div',{className:'flex-1 h-2 rounded',style:{background:'var(--surface2)'}},React.createElement('div',{className:'h-2 rounded',style:{width:(s.n/maxN)*100+'%',background:s.color}})),React.createElement('div',{className:'w-5 text-right'},s.n))); return React.createElement(Section,{title:'Pipeline'},React.createElement('div',{className:'space-y-2'},rows)); }
@@ -1255,13 +1256,14 @@ function DesidentificationDiary({ entries, setEntries, pinnedPhrase, setPinnedPh
   )
  );
 }
-function Clientes({ clients, addClient, updateClient, removeClient, importExcel, templates, setTemplates }) {
+function Clientes({ clients, addClient, updateClient, removeClient, importExcel, templates, setTemplates, userId }) {
  const [showAdd, setShowAdd] = useState(false);
  const excelInputRef = React.useRef(null);
  const [name, setName] = useState('');
  const [contact, setContact] = useState('');
  const [expanded, setExpanded] = useState(null);
- const [collapsedStages, setCollapsedStages] = useState({});
+ const [collapsedStages, setCollapsedStages] = useState(() => { try { return JSON.parse(localStorage.getItem(`synapse-clientes-collapsed-${userId}`) || '{}'); } catch (_) { return {}; } });
+ useEffect(() => { try { localStorage.setItem(`synapse-clientes-collapsed-${userId}`, JSON.stringify(collapsedStages)); } catch (_) {} }, [collapsedStages, userId]);
  const [showTemplates, setShowTemplates] = useState(false);
  return React.createElement('div', { className: 'pop clientes-ui' },
   React.createElement(Section, { title: 'Clientes', right: React.createElement('div', { className: 'flex items-center gap-3' },
