@@ -16,6 +16,7 @@ const SHELL_FILES = [
   './manifest.json?v=9',
   './synapse-mark.png',
   './synapse-logo.svg?v=9',
+  './standard-logo.svg?v=9',
   './splash-logo.svg?v=9',
   './icon-192.png?v=9',
   './icon-512.png?v=9',
