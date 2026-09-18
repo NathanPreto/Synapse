@@ -533,6 +533,17 @@ function SynapseWorkspace({ user, onLogout }) {
   if (!confirm(`Foram encontrados ${imported.length} clientes.\n\nNovos: ${added}\nAtualizados: ${updated}\n\nOs clientes serão adicionados ou atualizados sem apagar os atuais. Continuar?`)) return;
   setClients(existing); setExcelReview(null); setTab('clientes'); alert(`Importação concluída.\n\nNovos clientes: ${added}\nClientes atualizados: ${updated}`);
  }
+ function getSynLocalAnswer(question) {
+  const normalized = question.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (/^(oi|ola|bom dia|boa tarde|boa noite|hey|hello)\b/.test(normalized)) return 'Olá! Eu sou a Syn. Posso tirar dúvidas básicas sobre o Synapse e sobre organização comercial.';
+  if (/o que (e|é) o synapse|sobre o synapse|pra que serve o synapse|para que serve o synapse/.test(normalized)) return 'O Synapse é seu espaço para organizar clientes, lembretes, check-ins e o foco do dia em um só lugar.';
+  if (/cliente|clientes|cadastro de cliente/.test(normalized)) return 'Na área Clientes você pode cadastrar e editar clientes, além de acompanhar informações comerciais.';
+  if (/lembrete|lembretes/.test(normalized)) return 'Na área Lembretes você pode criar e acompanhar lembretes para não perder seus próximos passos.';
+  if (/check.?in|mental|foco do dia/.test(normalized)) return 'O Synapse também reúne check-ins, Mental e Foco do Dia para apoiar sua organização e rotina comercial.';
+  if (/excel|importar cliente|importacao|backup|exportar/.test(normalized)) return 'O Synapse permite importar clientes do Excel e importar ou exportar um backup dos seus dados.';
+  if (/como usar|por onde comeco|como funciona/.test(normalized)) return 'Comece pelo Painel para ter uma visão geral. Depois, use Clientes para organizar sua carteira e Lembretes para registrar os próximos passos.';
+  return '';
+ }
  async function askAI() {
   const question = aiQuestion.trim();
   if (!question || aiBusy || typeof backendAskAI !== 'function') return;
@@ -540,6 +551,12 @@ function SynapseWorkspace({ user, onLogout }) {
   setAiQuestion('');
   setAiMessages(nextMessages);
   setAiBusy(true);
+  const localAnswer = getSynLocalAnswer(question);
+  if (localAnswer) {
+   setAiMessages(prev => [...prev, { role:'model', text:localAnswer }]);
+   setAiBusy(false);
+   return;
+  }
   try {
    const context = `Você é a Syn, assistente virtual do Synapse. Responda em português do Brasil, de forma curta, clara, prática e amigável. Você ajuda com dúvidas básicas sobre o Synapse e assuntos gerais simples ligados a vendas e organização comercial. O Synapse possui as áreas Painel, Mental, Clientes, Lembretes e Foco do Dia; permite cadastrar e editar clientes, criar lembretes, registrar check-ins, importar clientes do Excel e importar ou exportar backup. Não invente funções, dados ou ações que não estejam disponíveis. Se não souber, diga isso de forma simples. Não revele detalhes técnicos da implementação ou de serviços usados nos bastidores. Contexto do aplicativo: ${clients.length} clientes, ${followUps.length} follow-ups parados, ${pendingReminders.length} lembretes pendentes, ${checkins.length} registros mentais.`;
    const history = nextMessages.slice(-12).map(message => ({ role:message.role, text:message.text }));

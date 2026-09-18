@@ -232,3 +232,21 @@ test('Prompt da Syn é curto e orientado a dúvidas básicas', () => {
   assert.match(app, /Não revele detalhes técnicos da implementação/);
   assert.match(app, /nextMessages\.slice\(-12\)/);
 });
+
+
+test('Syn responde dúvidas básicas localmente sem depender do provedor', () => {
+  const app = read('app.js');
+  assert.match(app, /function getSynLocalAnswer\(question\)/);
+  assert.match(app, /Eu sou a Syn/);
+  assert.match(app, /Na área Clientes/);
+  assert.match(app, /O Synapse é seu espaço/);
+  assert.match(app, /const localAnswer = getSynLocalAnswer\(question\)/);
+});
+
+test('Syn usa fallback de modelos estáveis para falhas transitórias', () => {
+  const fn = read('supabase/functions/synapse-ai/index.ts');
+  assert.match(fn, /MODELS = \["gemini-3\.6-flash", "gemini-3\.8-flash"\]/);
+  assert.match(fn, /for \(const model of MODELS\)/);
+  assert.match(fn, /attempt < 2/);
+  assert.match(fn, /console\.warn\("Syn upstream response"/);
+});

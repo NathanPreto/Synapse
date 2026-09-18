@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-const MODEL = "gemini-3.8-flash";
+const MODELS = ["gemini-3.6-flash", "gemini-3.8-flash"];
 const MAX_MESSAGES = 20;
 const MAX_TEXT_LENGTH = 4000;
 const MAX_CONTEXT_LENGTH = 5000;
@@ -59,67 +59,87 @@ Deno.serve(async (req: Request) => {
     const contents = normalizeMessages(body?.messages);
     const startedAt = Date.now();
 
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const remaining = TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
-      if (remaining <= 0) {
-        return json({ code: "UPSTREAM_TIMEOUT", error: "A Syn demorou mais do que o esperado para responder." }, 504);
-      }
+    for (const model of MODELS) {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const remaining = TOTAL_TIMEOUT_MS - (Date.now() - startedAt);
+        if (remaining <= 0) return json({ code: "UPSTREAM_TIMEOUT", error: "A Syn demorou mais do que o esperado para responder." }, 504);
 
-      const controller = new AbortController();
-      const attemptTimeout = setTimeout(() => controller.abort(), Math.min(ATTEMPT_TIMEOUT_MS, remaining));
+        const controller = new AbortController();
+        const attemptTimeout = setTimeout(() => controller.abort(), Math.min(ATTEMPT_TIMEOUT_MS, remaining));
 
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: context }] },
-            contents,
-            generationConfig: {
-              maxOutputTokens: 300,
-              thinkingConfig: { thinkingLevel: "low" }
-            }
-          }),
-          signal: controller.signal
-        });
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: context }] },
+              contents,
+              generationConfig: {
+                maxOutputTokens: 300,
+                thinkingConfig: { thinkingLevel: "low" }
+              }
+            }),
+            signal: controller.signal
+          });
 
-        const data = await response.json().catch(() => null);
+          const data = await response.json().catch(() => null);
 
-        if (response.ok) {
-          const answer = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("").trim();
-          if (!answer) return json({ code: "UPSTREAM_EMPTY", error: "A Syn não retornou uma resposta." }, 502);
-          return json({ answer: answer.slice(0, 20000) });
-        }
-
-        const upstreamMessage = String(data?.error?.message || "");
-        if (shouldRetry(response.status, upstreamMessage) && attempt < 2) {
-          const delay = Math.min(retryDelayMs(attempt), Math.max(0, TOTAL_TIMEOUT_MS - (Date.now() - startedAt)));
-          if (delay > 0) await sleep(delay);
-          continue;
-        }
-
-        if (response.status === 401 || response.status === 403) {
-          return json({ code: "UPSTREAM_AUTH", error: "A configuração da Syn não pôde ser validada." }, 502);
-        }
-        if (response.status === 429) {
-          return json({ code: "UPSTREAM_QUOTA", error: "A Syn atingiu um limite de uso." }, 429);
-        }
-        if ([408, 500, 502, 503, 504].includes(response.status)) {
-          return json({ code: "UPSTREAM_UNAVAILABLE", error: "A Syn está temporariamente indisponível." }, 503);
-        }
-        return json({ code: "UPSTREAM_ERROR", error: "Não foi possível concluir a resposta da Syn." }, 502);
-      } catch (error) {
-        if (error?.name === "AbortError") {
-          if (attempt < 2 && Date.now() - startedAt < TOTAL_TIMEOUT_MS) {
-            const delay = Math.min(retryDelayMs(attempt), Math.max(0, TOTAL_TIMEOUT_MS - (Date.now() - startedAt)));
-            if (delay > 0) await sleep(delay);
-            continue;
+          if (response.ok) {
+            const answer = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("").trim();
+            if (!answer) return json({ code: "UPSTREAM_EMPTY", error: "A Syn não retornou uma resposta." }, 502);
+            return json({ answer: answer.slice(0, 20000) });
           }
-          return json({ code: "UPSTREAM_TIMEOUT", error: "A Syn demorou mais do que o esperado para responder." }, 504);
+
+          const upstreamMessage = String(data?.error?.message || "");
+          console.warn("Syn upstream response", {
+            model,
+            status: response.status,
+            attempt,
+            message: upstreamMessage.slice(0, 300)
+          });
+
+          if (response.status === 401 || response.status === 403) {
+            return json({ code: "UPSTREAM_AUTH", error: "A configuração da Syn não pôde ser validada." }, 502);
+          }
+
+          if (response.status === 429) {
+            if (shouldRetry(response.status, upstreamMessage) && attempt === 0) {
+              const delay = Math.min(retryDelayMs(attempt), Math.max(0, TOTAL_TIMEOUT_MS - (Date.now() - startedAt)));
+              if (delay > 0) await sleep(delay);
+              continue;
+            }
+            return json({ code: "UPSTREAM_QUOTA", error: "A Syn atingiu um limite de uso." }, 429);
+          }
+
+          if (shouldRetry(response.status, upstreamMessage)) {
+            if (attempt === 0) {
+              const delay = Math.min(retryDelayMs(attempt), Math.max(0, TOTAL_TIMEOUT_MS - (Date.now() - startedAt)));
+              if (delay > 0) await sleep(delay);
+              continue;
+            }
+            break;
+          }
+
+          return json({ code: "UPSTREAM_ERROR", error: "Não foi possível concluir a resposta da Syn." }, 502);
+        } catch (error) {
+          if (error?.name === "AbortError") {
+            if (attempt === 0 && Date.now() - startedAt < TOTAL_TIMEOUT_MS) {
+              const delay = Math.min(retryDelayMs(attempt), Math.max(0, TOTAL_TIMEOUT_MS - (Date.now() - startedAt)));
+              if (delay > 0) await sleep(delay);
+              continue;
+            }
+            break;
+          }
+
+          console.warn("Syn upstream fetch failed", {
+            model,
+            attempt,
+            error: String(error?.message || error).slice(0, 300)
+          });
+          break;
+        } finally {
+          clearTimeout(attemptTimeout);
         }
-        return json({ code: "UPSTREAM_UNAVAILABLE", error: "A Syn está temporariamente indisponível." }, 503);
-      } finally {
-        clearTimeout(attemptTimeout);
       }
     }
 
