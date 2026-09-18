@@ -15,6 +15,25 @@ async function testAsync(name, fn) {
   catch (error) { results.push(['FAIL', name, error]); }
 }
 
+test('Privacidade e Termos são públicos e vinculados à autenticação e ao menu da conta', () => {
+  const app = read('app.js');
+  const privacy = read('privacidade.html');
+  const terms = read('termos.html');
+  assert.match(app, /href:'privacidade\.html'/);
+  assert.match(app, /href:'termos\.html'/);
+  assert.match(app, /suport\.synapse@gmail\.com/);
+  assert.match(privacy, /Política de Privacidade/);
+  assert.match(privacy, /Supabase/);
+  assert.match(privacy, /Google Gemini/);
+  assert.match(privacy, /localStorage/);
+  assert.match(privacy, /suport\.synapse@gmail\.com/);
+  assert.match(terms, /Termos de Uso/);
+  assert.match(terms, /Uso aceitável/);
+  assert.match(terms, /inteligência artificial/);
+  assert.match(terms, /limitação|limitações/i);
+  assert.match(terms, /suport\.synapse@gmail\.com/);
+});
+
 test('JavaScript principal continua sintaticamente válido', () => {
   for (const file of ['app.js','synapse-runtime.js','backend.js','services/supabase.js','services/persistence.js','sw.js']) {
     new vm.Script(read(file), { filename:file });
