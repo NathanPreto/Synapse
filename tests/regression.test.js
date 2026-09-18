@@ -266,3 +266,12 @@ test('Renderizador da Syn transforma listas em elementos seguros', () => {
   assert.match(app, /React\.createElement\('ol'/);
   assert.match(app, /React\.createElement\('li'/);
 });
+
+
+test('Renderização da Syn possui fallback seguro contra mensagens malformadas', () => {
+  const app = read('app.js');
+  assert.match(app, /function renderSynMessage\(message\)/);
+  assert.match(app, /Array\.isArray\(message\?\.blocks\)/);
+  assert.match(app, /catch \(_\)/);
+  assert.match(app, /renderSynMessage\(message\)/);
+});

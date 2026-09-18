@@ -553,6 +553,21 @@ function SynapseWorkspace({ user, onLogout }) {
   flushList();
   return blocks;
  }
+ function renderSynMessage(message) {
+  try {
+   const blocks = Array.isArray(message?.blocks) && message.blocks.length ? message.blocks : formatSynMessage(message?.text);
+   return blocks.map((block,blockIndex) => {
+    if (block?.type === 'list' && Array.isArray(block.items)) {
+     return React.createElement('ol',{key:blockIndex,className:'ai-message-list'},
+      block.items.map((item,itemIndex)=>React.createElement('li',{key:itemIndex},String(item || '')))
+     );
+    }
+    return React.createElement('p',{key:blockIndex},String(block?.text || ''));
+   });
+  } catch (_) {
+   return React.createElement('p',null,String(message?.text || ''));
+  }
+ }
  function getSynLocalAnswer(question) {
   const normalized = question.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   if (/^(oi|ola|bom dia|boa tarde|boa noite|hey|hello)\b/.test(normalized)) return 'Olá! Eu sou a Syn. Posso tirar dúvidas básicas sobre o Synapse e sobre organização comercial.';
@@ -1098,13 +1113,7 @@ function AIAssistant({messages,question,setQuestion,busy,onAsk,onClose,onClear})
     ),
     messages.map((message,index)=>React.createElement('div',{key:index,className:'ai-message-row '+(message.role==='user'?'user':'assistant')},
      message.role==='model' && React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),
-     React.createElement('div',{className:'ai-message-bubble'},
-      (message.blocks || formatSynMessage(message.text)).map((block,blockIndex)=>
-       block.type==='list'
-        ? React.createElement('ol',{key:blockIndex,className:'ai-message-list'},block.items.map((item,itemIndex)=>React.createElement('li',{key:itemIndex},item)))
-        : React.createElement('p',{key:blockIndex},block.text)
-      )
-     )
+     React.createElement('div',{className:'ai-message-bubble'},renderSynMessage(message))
     )),
     busy && React.createElement('div',{className:'ai-message-row assistant','role':'status','aria-label':'Syn está digitando'},
      React.createElement('div',{className:'ai-message-avatar'},React.createElement(Sparkles,{size:12})),
