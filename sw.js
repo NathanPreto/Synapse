@@ -1,29 +1,26 @@
 // Service worker do Synapse: cache do app shell para abertura instantânea
-// e uso básico offline. Não intercepta chamadas ao Supabase nem ao Gemini.
-const CACHE_NAME = 'synapse-shell-v10';
+// e uso básico offline. Chamadas para APIs externas não são interceptadas.
+const CACHE_VERSION = 'v11';
+const CACHE_NAME = `synapse-shell-${CACHE_VERSION}`;
 const SHELL_FILES = [
   './',
   './index.html',
   './styles.css',
   './config.js',
   './synapse-runtime.js',
+  './backend.js',
   './app.js',
-  './core/logger.js',
-  './core/sanitize.js',
-  './services/storage.js',
   './services/supabase.js',
   './services/persistence.js',
-  './services/spreadsheet.js',
-  './manifest.json?v=9',
-  './synapse-mark.png',
-  './synapse-logo.svg?v=9',
-  './standard-logo.svg?v=9',
-  './splash-logo.svg?v=9',
-  './icon-192.png?v=9',
-  './icon-512.png?v=9',
-  './icon-maskable.png?v=9',
-  './apple-touch-icon.png?v=9',
-  './favicon-32.png?v=9'
+  './manifest.json?v=11',
+  './synapse-logo.svg?v=11',
+  './standard-logo.svg?v=11',
+  './splash-logo.svg?v=11',
+  './icon-192.png?v=11',
+  './icon-512.png?v=11',
+  './icon-maskable.png?v=11',
+  './apple-touch-icon.png?v=11',
+  './favicon-32.png?v=11'
 ];
 
 self.addEventListener('install', (event) => {
@@ -39,7 +36,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((names) =>
       Promise.all(
         names
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name.startsWith('synapse-shell-') && name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       )
     ).then(() => self.clients.claim())
@@ -53,8 +50,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(req)
       .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+        }
         return res;
       })
       .catch(() => caches.match(req))

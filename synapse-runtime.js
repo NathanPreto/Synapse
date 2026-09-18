@@ -44,7 +44,9 @@
     const payload = { level, message: safeString(resolvedMessage), error: error?.message || error || null, context: context || null, at: new Date().toISOString() };
     try { console[level === 'error' ? 'error' : 'warn']('[Synapse]', payload); } catch (_) {}
     listeners.forEach(fn => { try { fn(payload); } catch (_) {} });
-    try { window.dispatchEvent(new CustomEvent('synapse:error', { detail: payload })); } catch (_) {}
+    if (level === 'error') {
+      try { window.dispatchEvent(new CustomEvent('synapse:error', { detail: payload })); } catch (_) {}
+    }
   }
   let busyCount = 0;
   window.SynapseFeedback = {
