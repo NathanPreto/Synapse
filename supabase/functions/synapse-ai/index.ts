@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: context }] }, contents, generationConfig: { maxOutputTokens: 300, thinkingConfig: { thinkingLevel: "low" } } }),
+        body: JSON.stringify({ system_instruction: { parts: [{ text: context }] }, contents, generationConfig: { maxOutputTokens: 300, thinkingConfig: { thinkingLevel: "low" } } }),
         signal: controller.signal
       });
       const data = await response.json().catch(() => null);

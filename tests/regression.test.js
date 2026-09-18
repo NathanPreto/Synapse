@@ -189,8 +189,8 @@ test('Edge Function trata CORS e preflight', () => {
   assert.match(fn, /GEMINI_TIMEOUT_MS = 12000/);
   assert.match(fn, /thinkingLevel: "low"/);
   assert.match(fn, /maxOutputTokens: 300/);
-  assert.match(fn, /systemInstruction/);
-  assert.equal(fn.includes('system_instruction'), false);
+  assert.match(fn, /system_instruction/);
+  assert.match(fn, /generationConfig: \{ maxOutputTokens: 300, thinkingConfig/);
 });
 
 test('Falha da IA não é mascarada no frontend', () => {
