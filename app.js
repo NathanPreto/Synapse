@@ -124,7 +124,7 @@ function GoogleMark() {
 }
 function AuthBrand() {
  return React.createElement('div',{className:'auth-brand'},
-  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),
+  React.createElement('div',{className:'auth-brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),
   React.createElement('div',{className:'auth-brand-copy'},
    React.createElement('div',{className:'auth-title'},'Synapse'),
    React.createElement('div',{className:'auth-subtitle'},'Gestão comercial e mentalidade')
@@ -186,7 +186,7 @@ function AuthScreen() {
  return React.createElement('main',{className:'auth-screen'},
   React.createElement('section',{className:'auth-shell'},
    React.createElement('div',{className:'auth-side'},
-    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),
+    React.createElement('div',{className:'auth-side-logo'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),
     React.createElement('div',{className:'auth-side-content'},
      React.createElement('div',{className:'auth-kicker'},'Seu espaço comercial'),
      React.createElement('h1',null,'Venda com clareza.\nDecida com presença.'),
@@ -562,7 +562,7 @@ function SynapseWorkspace({ user, onLogout }) {
   return React.createElement(Shell, { theme },
    React.createElement('div', { className: 'cloud-load-state' },
     React.createElement('div',{className:'cloud-load-card loading'},
-     React.createElement('div',{className:'cloud-load-spinner'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),
+     React.createElement('div',{className:'cloud-load-spinner'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),
      React.createElement('h2',null,'Carregando seu espaço'),
      React.createElement('p',null,'Buscando seus dados com segurança.')
     )
@@ -1081,7 +1081,7 @@ function TopBar({ streak, tab, setTab, exportBackup, importBackup, importExcel, 
   React.createElement('input',{ref:excelInputRef,type:'file',accept:'.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv',className:'hidden',onChange:e=>{const f=e.target.files?.[0];if(f)importExcel(f);e.target.value='';}})
  );
  return React.createElement('aside',{ref:sidebarRef,className:'synapse-sidebar'+(sidebarOpen?' is-open':''),onMouseEnter:openSidebar,onMouseLeave:closeSidebarIfUnfocused,onFocusCapture:openSidebar,onBlurCapture:closeSidebarIfUnfocused, 'aria-label':'Navegação principal'},
-  React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=9',alt:'Synapse'})),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
+  React.createElement('div',{className:'sidebar-brand'},React.createElement('div',{className:'brand-mark'},React.createElement('img',{src:'standard-logo.svg?v=11',alt:'Synapse'})),React.createElement('div',null,React.createElement('b',null,'Synapse'),React.createElement('small',null,'espaço comercial'))),
   React.createElement('nav',{className:'sidebar-nav'},items.map(({key,label,IconC})=>React.createElement('button',{key,onClick:()=>setTab(key),className:tab===key?'active':'',title:label},React.createElement(IconC,{size:17}),React.createElement('span',null,label)))),
   React.createElement('div',{className:'sidebar-bottom'},React.createElement('div',{className:'sidebar-tools'},React.createElement('div',{className:'flex items-center gap-1.5 text-sm',style:{color:streak>0?'var(--ember)':'var(--muted)'}},React.createElement(Flame,{size:16,strokeWidth:2}),React.createElement('span',null,streak,' ',streak===1?'dia':'dias')),backupButtons),React.createElement('div',{className:'account-name'},React.createElement('span',{className:'account-avatar'},(user?.email||'S').slice(0,1).toUpperCase()),React.createElement('div',null,React.createElement('small',null,'Conta pessoal'),React.createElement('b',null,user?.email||'Synapse')),React.createElement('button',{onClick:onLogout,className:'top-logout'},'Sair')))
  );
