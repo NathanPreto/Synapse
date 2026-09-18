@@ -34,6 +34,23 @@ test('Privacidade e Termos são públicos e vinculados à autenticação e ao me
   assert.match(terms, /suport\.synapse@gmail\.com/);
 });
 
+test('Exclusão de conta exige confirmação e usa função protegida', () => {
+  const app = read('app.js');
+  const backend = read('backend.js');
+  const supabase = read('services/supabase.js');
+  const fn = read('supabase/functions/delete-account/index.ts');
+  assert.match(app, /Configurações/);
+  assert.match(app, /Digite EXCLUIR/);
+  assert.match(app, /confirmation\.trim\(\)\.toUpperCase\(\)!=='EXCLUIR'/);
+  assert.match(app, /backendDeleteAccount/);
+  assert.match(backend, /deleteAccount/);
+  assert.match(supabase, /functions\.invoke\(['"]delete-account['"]/);
+  assert.match(fn, /auth\.admin\.deleteUser/);
+  assert.match(fn, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(fn, /getUser\(accessToken\)/);
+  assert.match(fn, /verify_jwt/); 
+});
+
 test('JavaScript principal continua sintaticamente válido', () => {
   for (const file of ['app.js','synapse-runtime.js','backend.js','services/supabase.js','services/persistence.js','sw.js']) {
     new vm.Script(read(file), { filename:file });
