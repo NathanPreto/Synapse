@@ -31,6 +31,30 @@
       if (error) throw error;
     } finally { window.SynapseFeedback?.end(); }
   }
+  async function deleteAccount() {
+    const api = requireClient();
+    const { data: sessionData } = await api.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) throw new Error('Sua sessão expirou. Entre novamente para excluir a conta.');
+    const { data, error } = await api.functions.invoke('delete-account', {
+      body: {},
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (error) {
+      let code = '';
+      try {
+        if (error.context?.json) {
+          const payload = await error.context.json();
+          code = String(payload?.code || '').toUpperCase();
+        }
+      } catch (_) {}
+      if (code === 'UNAUTHORIZED') throw new Error('Sua sessão expirou. Entre novamente e tente outra vez.');
+      if (code === 'CONFIG_MISSING') throw new Error('A exclusão de conta ainda não está configurada no servidor.');
+      throw new Error('Não foi possível excluir sua conta agora. Tente novamente.');
+    }
+    if (!data?.ok) throw new Error('Não foi possível excluir sua conta agora. Tente novamente.');
+    return data;
+  }
   async function askAI(payload) {
     const api = requireClient();
     const body = payload && typeof payload === 'object' ? payload : {};
@@ -88,5 +112,5 @@
       };
     } finally { window.SynapseFeedback?.end(); }
   }
-  window.SynapseSupabase = { auth: client?.auth || null, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData, askAI };
+  window.SynapseSupabase = { auth: client?.auth || null, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData, askAI, deleteAccount };
 })();
