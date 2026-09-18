@@ -1,7 +1,7 @@
 const { useState, useEffect, useMemo } = React;
 /* ---------- armazenamento multiplataforma e tolerante a bloqueios ---------- */
 const { persistentStorage, storage, safeSessionGet, safeSessionSet } = window.SynapseStorage;
-const { client: supabaseClient, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData } = window.SynapseSupabase;
+const { auth, syncUserRows, deleteCloudRow, syncSettings, loadSynapseData } = window.SynapseBackend;
 const { sanitizeInput, sanitizeRecord } = window.SynapseSecurity;
 const LOST_TAGS = ['Preço','Timing','Escolheu Concorrente','Sumiu / Sem Resposta','Fora do Perfil','Sem Orçamento','Sem Necessidade','Outro'];
 
@@ -141,20 +141,20 @@ function AuthScreen() {
  const submit = async (e) => {
   e.preventDefault(); setBusy(true); setMessage(''); setError('');
   try {
-   if (!supabaseClient) throw new Error('A conexão com o Supabase não foi configurada.');
+   if (!auth) throw new Error('O serviço de autenticação não foi configurado.');
    if (mode === 'signup') {
     if (!isStrongPassword(password)) throw new Error('A senha precisa ter 8+ caracteres, maiúscula, minúscula, número e símbolo.');
     if (password !== confirmPassword) throw new Error('As senhas não coincidem.');
-    const { data, error } = await supabaseClient.auth.signUp({ email: email.trim(), password, options: { data: { full_name: name.trim() } } });
+    const { data, error } = await auth.signUp({ email: email.trim(), password, options: { data: { full_name: name.trim() } } });
     if (error) throw error;
     if (!data.session) setMessage('Conta criada. Verifique seu e-mail para confirmar o cadastro e depois entre no Synapse.');
     else setMessage('Conta criada.');
    } else if (mode === 'reset') {
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
+    const { error } = await auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
     if (error) throw error;
     setMessage('Enviamos as instruções de recuperação para seu e-mail.');
    } else {
-    const { error } = await supabaseClient.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await auth.signInWithPassword({ email: email.trim(), password });
     if (error) throw error;
    }
   } catch (err) {
@@ -164,8 +164,8 @@ function AuthScreen() {
  const signInGoogle = async () => {
   setBusy(true); setError(''); setMessage('');
   try {
-   if (!supabaseClient) throw new Error('A conexão com o Supabase não foi configurada.');
-   const { error } = await supabaseClient.auth.signInWithOAuth({
+   if (!auth) throw new Error('O serviço de autenticação não foi configurado.');
+   const { error } = await auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin }
    });
@@ -232,7 +232,7 @@ function PasswordRecoveryScreen({ onDone }) {
   try {
    if (!isStrongPassword(password)) throw new Error('A senha precisa ter 8+ caracteres, maiúscula, minúscula, número e símbolo.');
    if(password!==confirmPassword) throw new Error('As senhas não coincidem.');
-   const {error}=await supabaseClient.auth.updateUser({password});
+   const {error}=await auth.updateUser({password});
    if(error) throw error;
    setMessage('Senha atualizada. Você já pode continuar usando o Synapse.');
    setTimeout(onDone,900);
@@ -259,8 +259,8 @@ function App() {
  const [recoveryMode, setRecoveryMode] = useState(false);
  useEffect(() => {
   let active = true;
-  if (!supabaseClient) { setAuthLoading(false); return () => {}; }
-  supabaseClient.auth.getSession().then(({data, error}) => {
+  if (!auth) { setAuthLoading(false); return () => {}; }
+  auth.getSession().then(({data, error}) => {
    if (!active) return;
    if (error) window.SynapseLogger?.error('Falha ao recuperar sessão do Synapse.', error);
    setSession(data?.session || null);
@@ -269,7 +269,7 @@ function App() {
    window.SynapseLogger?.error('Falha ao recuperar sessão do Synapse.', error);
    if (active) { setSession(null); setAuthLoading(false); }
   });
-  const { data: listener } = supabaseClient.auth.onAuthStateChange((event, nextSession) => {
+  const { data: listener } = auth.onAuthStateChange((event, nextSession) => {
    if(!active) return;
    if(event === 'PASSWORD_RECOVERY') setRecoveryMode(true);
    setSession(nextSession);
@@ -277,10 +277,10 @@ function App() {
   return () => { active=false; listener?.subscription?.unsubscribe(); };
  }, []);
  if (authLoading) return React.createElement(AuthLoading, null);
- if (!supabaseClient) return React.createElement(AuthScreen, null);
+ if (!auth) return React.createElement(AuthScreen, null);
  if (recoveryMode && session) return React.createElement(PasswordRecoveryScreen,{onDone:()=>setRecoveryMode(false)});
  if (!session) return React.createElement(AuthScreen, null);
- return React.createElement(SynapseWorkspace,{user:session.user,onLogout:()=>supabaseClient.auth.signOut()});
+ return React.createElement(SynapseWorkspace,{user:session.user,onLogout:()=>auth.signOut()});
 }
 function AuthLoading(){ return React.createElement('main',{className:'auth-screen'},React.createElement('div',{className:'auth-card auth-card-single auth-loading'},React.createElement(AuthBrand,null),React.createElement('div',{className:'auth-copy'},'Carregando seu espaço...'))); }
 
