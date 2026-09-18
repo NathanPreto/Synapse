@@ -558,8 +558,12 @@ function SynapseWorkspace({ user, onLogout }) {
       ? 'A credencial da IA no servidor foi recusada. Verifique a configuração da GEMINI_API_KEY.'
       : lower.includes('quota') || lower.includes('rate limit') || lower.includes('resource exhausted')
        ? 'A IA atingiu o limite de uso. Tente novamente em alguns instantes.'
-       : lower.includes('demorou demais') || lower.includes('timeout')
-        ? 'A Syn demorou para responder. Tente novamente.'
+       : lower.includes('gemini_timeout') || lower.includes('demorou demais') || lower.includes('timeout')
+        ? 'O Gemini não respondeu em até 12 segundos. A conexão com o provedor está demorando além do esperado.'
+        : lower.includes('gemini_auth')
+         ? 'O Gemini recusou a credencial da IA. Verifique a GEMINI_API_KEY cadastrada no servidor.'
+         : lower.includes('gemini_quota')
+          ? 'O Gemini informou limite de uso. Tente novamente em alguns instantes.'
         : raw || 'Não foi possível consultar a Syn agora.';
    setAiMessages(prev => [...prev, { role:'model', text:message }]);
   } finally { setAiBusy(false); }

@@ -186,6 +186,11 @@ test('Edge Function trata CORS e preflight', () => {
   assert.match(fn, /Access-Control-Allow-Origin/);
   assert.match(fn, /req\.method === "OPTIONS"/);
   assert.match(fn, /GEMINI_API_KEY/);
+  assert.match(fn, /GEMINI_TIMEOUT_MS = 12000/);
+  assert.match(fn, /thinkingLevel: "low"/);
+  assert.match(fn, /maxOutputTokens: 300/);
+  assert.match(fn, /systemInstruction/);
+  assert.equal(fn.includes('system_instruction'), false);
 });
 
 test('Falha da IA não é mascarada no frontend', () => {
@@ -193,4 +198,5 @@ test('Falha da IA não é mascarada no frontend', () => {
   assert.match(app, /Sua sessão expirou/);
   assert.match(app, /A Syn ainda não está configurada no servidor/);
   assert.match(app, /credencial da IA no servidor foi recusada/);
+  assert.match(app, /O Gemini não respondeu em até 12 segundos/);
 });

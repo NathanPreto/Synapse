@@ -48,7 +48,7 @@
         try {
           if (error.context?.json) {
             const payload = await error.context.json();
-            detail = payload?.error || payload?.message || '';
+            detail = payload?.code ? `${payload.code}: ${payload.error || payload.message || ''}` : payload?.error || payload?.message || '';
           }
         } catch (_) {}
         throw new Error(detail || error.message || 'Não foi possível consultar a IA.');

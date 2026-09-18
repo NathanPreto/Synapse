@@ -10,6 +10,7 @@ const MODEL = "gemini-3.8-flash";
 const MAX_MESSAGES = 20;
 const MAX_TEXT_LENGTH = 4000;
 const MAX_CONTEXT_LENGTH = 5000;
+const GEMINI_TIMEOUT_MS = 12000;
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -30,32 +31,34 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
   const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) return json({ error: "A IA não está configurada no servidor." }, 503);
+  if (!apiKey) return json({ code: "CONFIG_MISSING", error: "A IA não está configurada no servidor." }, 503);
   try {
     const body = await req.json();
     const context = typeof body?.context === "string" ? body.context.trim().slice(0, MAX_CONTEXT_LENGTH) : "";
     const contents = normalizeMessages(body?.messages);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({ system_instruction: { parts: [{ text: context }] }, contents, generationConfig: { maxOutputTokens: 700 } }),
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: context }] }, contents, generationConfig: { maxOutputTokens: 300, thinkingConfig: { thinkingLevel: "low" } } }),
         signal: controller.signal
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) {
         const message = data?.error?.message || "O provedor de IA recusou a solicitação.";
-        return json({ error: message }, response.status >= 400 && response.status < 500 ? 400 : 502);
+        const status = response.status === 401 || response.status === 403 ? 502 : response.status === 429 ? 429 : 502;
+        const code = response.status === 401 || response.status === 403 ? "GEMINI_AUTH" : response.status === 429 ? "GEMINI_QUOTA" : "GEMINI_HTTP";
+        return json({ code, error: message }, status);
       }
       const answer = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("").trim();
-      if (!answer) return json({ error: "A IA não retornou uma resposta." }, 502);
+      if (!answer) return json({ code: "GEMINI_EMPTY", error: "A IA não retornou uma resposta." }, 502);
       return json({ answer: answer.slice(0, 20000) });
     } finally { clearTimeout(timeout); }
   } catch (error) {
-    if (error?.name === "AbortError") return json({ error: "A consulta à IA demorou demais. Tente novamente." }, 504);
-    if (error instanceof SyntaxError) return json({ error: "A solicitação enviada à IA é inválida." }, 400);
-    return json({ error: error?.message || "Não foi possível consultar a IA." }, 400);
+    if (error?.name === "AbortError") return json({ code: "GEMINI_TIMEOUT", error: "O Gemini não respondeu dentro do limite de 12 segundos." }, 504);
+    if (error instanceof SyntaxError) return json({ code: "INVALID_REQUEST", error: "A solicitação enviada à IA é inválida." }, 400);
+    return json({ code: "FUNCTION_ERROR", error: error?.message || "Não foi possível consultar a IA." }, 500);
   }
 });
