@@ -44,6 +44,7 @@ function FocoDoDia({ items, toggleReminder, goTo }) {
     React.createElement(
       Section,
       {
+        span: 12,
         title: 'Próximos Passos do Dia',
         right: React.createElement(
           'span',
@@ -100,7 +101,7 @@ function Lembretes({
     followUps.length > 0 &&
       React.createElement(
         Section,
-        { title: 'Sugeridos pelo sistema' },
+        { title: 'Sugeridos pelo sistema', span: 7 },
         React.createElement(
           'div',
           { className: 'space-y-2' },
@@ -135,7 +136,7 @@ function Lembretes({
       ),
     React.createElement(
       Section,
-      { title: 'Meus lembretes' },
+      { title: 'Meus lembretes', span: 5 },
       React.createElement(
         'div',
         {

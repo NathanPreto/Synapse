@@ -165,7 +165,7 @@ function Mental({
     ),
     React.createElement(
       Section,
-      { title: 'Autorreconhecimento emocional' },
+      { title: 'Autorreconhecimento emocional', span: 7 },
       React.createElement(
         'div',
         {
@@ -205,7 +205,7 @@ function Mental({
         ),
         React.createElement(
           'div',
-          { className: 'grid grid-cols-3 md:grid-cols-6 gap-1.5' },
+          { className: 'stage-steps grid grid-cols-3 md:grid-cols-6 gap-1.5' },
           stages.map((s, i) =>
             React.createElement(
               'button',
@@ -332,7 +332,7 @@ function Mental({
     ),
     React.createElement(
       Section,
-      { title: 'Contexto do check-in' },
+      { title: 'Contexto do check-in', span: 5 },
       React.createElement(
         'div',
         {
@@ -419,7 +419,7 @@ function Mental({
     }),
     React.createElement(
       Section,
-      { title: 'Histórico' },
+      { title: 'Histórico', span: 5 },
       history.length === 0
         ? React.createElement(
             'div',
@@ -578,6 +578,7 @@ function DesidentificationDiary({ entries, setEntries, pinnedPhrase, setPinnedPh
   return React.createElement(
     Section,
     {
+      span: 7,
       title: 'Desidentificação prática',
       right: React.createElement(
         'span',

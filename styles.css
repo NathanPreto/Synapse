@@ -52,33 +52,8 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .synapse-main{min-width:0;max-width:1530px;width:100%;margin:0 auto;padding:28px 36px 22px}.workspace-header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:20px}.workspace-eyebrow{color:var(--muted2);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}.workspace-header h1{margin:7px 0 0;font-family:Newsreader,serif;font-size:40px;font-weight:500;line-height:1;letter-spacing:-.055em}.workspace-actions{display:flex;align-items:center;gap:10px}.header-icon{width:38px;min-height:38px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}.header-primary{min-height:38px;padding:0 15px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-size:12px;font-weight:700}.workspace-content{padding-left:0!important;padding-right:0!important;padding-top:14px!important}
 .synapse-main .pop{gap:18px}.synapse-main .pop > .mb-8 > div:not(.flex),.synapse-main .pop > .p-4.rounded{background:var(--surface)!important;border-color:var(--border)!important;border-radius:16px!important;box-shadow:0 12px 32px rgba(31,31,25,.055)!important}.synapse-main .pop > .mb-8 > .flex h2{font-family:"DM Sans",sans-serif!important;font-size:14px!important}.synapse-main .pop .space-y-2>div,.synapse-main .pop .space-y-1\.5>div{box-shadow:none!important;border-color:var(--border)!important}.synapse-main .pop button{min-height:34px}.synapse-main .pop button:not(:disabled):hover{box-shadow:none}.synapse-main .pop .rounded{border-radius:12px!important}
 .ai-fab{background:var(--blue)!important;color:#fff!important;border-color:var(--blue)!important}.smart-modal{box-shadow:0 24px 70px rgba(31,31,25,.22)}
-@media(min-width:768px){.synapse-main .pop> .mb-8:nth-child(1){grid-column:span 7}.synapse-main .pop> .mb-8:nth-child(2){grid-column:span 5}.synapse-main .pop> .mb-8:nth-child(3),.synapse-main .pop> .mb-8:nth-child(4){grid-column:span 6}}
 @media(max-width:860px){.synapse-layout{grid-template-columns:1fr}.synapse-sidebar{position:static;height:auto;padding:14px 16px;border-right:0;border-bottom:1px solid var(--border)}.sidebar-brand{padding:0 0 12px}.sidebar-nav{display:flex;overflow-x:auto;padding-bottom:2px}.sidebar-nav button{width:auto;white-space:nowrap;min-height:38px;padding:9px 10px}.sidebar-bottom{display:none}.synapse-main{padding:22px 18px}.workspace-header{margin-bottom:12px}.workspace-header h1{font-size:34px}.header-primary{padding:0 11px}.workspace-content{padding-top:10px!important}}
 @media(max-width:480px){.workspace-actions .header-icon{display:none}.header-primary{font-size:11px}.sidebar-brand small{display:none}.sidebar-brand{padding-bottom:10px}.synapse-sidebar{padding:12px}.workspace-header h1{font-size:31px}}
-
-/* Navegação lateral recolhível no desktop: expande com hover ou foco, sem alterar o comportamento mobile. */
-@media (min-width:1025px) and (hover:hover){
- .synapse-layout{grid-template-columns:72px minmax(0,1fr);transition:grid-template-columns .22s ease}
- .synapse-sidebar{padding-left:10px;padding-right:10px;overflow-x:hidden;transition:padding .22s ease}
- .sidebar-brand{justify-content:center;padding-left:0;padding-right:0;gap:0}
- .sidebar-brand b,.sidebar-brand small,.sidebar-nav button span,.sidebar-tools>div:first-child span,.account-name>div{opacity:0;width:0;overflow:hidden;white-space:nowrap;pointer-events:none;transition:opacity .14s ease,width .22s ease}
- .sidebar-nav button{justify-content:center;padding-left:9px;padding-right:9px}
- .sidebar-tools{justify-content:center}
- .account-name{justify-content:center}
- .account-name .top-logout{opacity:0;width:0;padding-left:0;padding-right:0;overflow:hidden;pointer-events:none}
- .synapse-sidebar:hover,.synapse-sidebar:focus-within{padding-left:18px;padding-right:18px}
- .synapse-layout:has(.synapse-sidebar:hover),.synapse-layout:has(.synapse-sidebar:focus-within){grid-template-columns:258px minmax(0,1fr)}
- .synapse-sidebar:hover .sidebar-brand,.synapse-sidebar:focus-within .sidebar-brand{justify-content:flex-start;gap:11px;padding-left:8px;padding-right:8px}
- .synapse-sidebar:hover .sidebar-brand b,.synapse-sidebar:hover .sidebar-brand small,.synapse-sidebar:hover .sidebar-nav button span,.synapse-sidebar:hover .sidebar-tools>div:first-child span,.synapse-sidebar:hover .account-name>div,
- .synapse-sidebar:focus-within .sidebar-brand b,.synapse-sidebar:focus-within .sidebar-brand small,.synapse-sidebar:focus-within .sidebar-nav button span,.synapse-sidebar:focus-within .sidebar-tools>div:first-child span,.synapse-sidebar:focus-within .account-name>div{opacity:1;width:auto;pointer-events:auto}
- .synapse-sidebar:hover .sidebar-nav button,.synapse-sidebar:focus-within .sidebar-nav button{justify-content:flex-start;padding-left:12px;padding-right:12px}
- .synapse-sidebar:hover .sidebar-tools,.synapse-sidebar:focus-within .sidebar-tools{justify-content:space-between}
- .synapse-sidebar:hover .account-name,.synapse-sidebar:focus-within .account-name{justify-content:flex-start}
- .synapse-sidebar:hover .account-name .top-logout,.synapse-sidebar:focus-within .account-name .top-logout{opacity:1;width:auto;padding-left:8px;padding-right:8px;pointer-events:auto}
-}
-@media (prefers-reduced-motion:reduce){
- .synapse-layout,.synapse-sidebar,.sidebar-brand b,.sidebar-brand small,.sidebar-nav button span,.sidebar-tools>div:first-child span,.account-name>div,.account-name .top-logout{transition:none!important}
-}
 
 /* Responsividade real: os grupos passam a se reorganizar, sem comprimir controles. */
 .synapse-main,.workspace-content,.pop,.pop>*,.clientes-pipeline,.cliente-stage,.smart-modal,.diary-layout>*{min-width:0}
@@ -260,204 +235,12 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 }
 @media(prefers-reduced-motion:reduce){.auth-google,.auth-submit,.auth-form input{transition:none}}
 
-/* ================================================================
-   Synapse navigation — refined collapse/expand system
-   Desktop only. The sidebar keeps a stable hit area while its
-   internal content transitions; icons never animate out of view.
-   JavaScript toggles .is-open on .synapse-sidebar.
-   ================================================================ */
-@media (min-width: 861px) and (hover: hover) {
-  .synapse-layout {
-    grid-template-columns: 76px minmax(0, 1fr);
-    transition: grid-template-columns 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar {
-    width: 76px;
-    box-sizing: border-box;
-    padding: 28px 10px;
-    overflow: hidden;
-    transition:
-      width 420ms cubic-bezier(.22, 1, .36, 1),
-      padding 420ms cubic-bezier(.22, 1, .36, 1),
-      background-color 300ms ease-in-out,
-      box-shadow 420ms cubic-bezier(.22, 1, .36, 1);
-    will-change: width;
-  }
-
-  .synapse-sidebar.is-open {
-    width: 280px;
-    padding-left: 18px;
-    padding-right: 18px;
-    box-shadow: 8px 0 30px rgba(22,24,22,.045);
-  }
-
-  .sidebar-brand {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    justify-content: center;
-    gap: 0;
-    padding-left: 0;
-    padding-right: 0;
-    transition:
-      justify-content 420ms cubic-bezier(.22, 1, .36, 1),
-      gap 420ms cubic-bezier(.22, 1, .36, 1),
-      padding 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open .sidebar-brand {
-    justify-content: flex-start;
-    gap: 11px;
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-
-  .sidebar-brand > div:last-child,
-  .sidebar-tools > div:first-child,
-  .account-name > div {
-    min-width: 0;
-    max-width: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateX(-10px);
-    white-space: nowrap;
-    pointer-events: none;
-    transition:
-      max-width 420ms cubic-bezier(.22, 1, .36, 1),
-      opacity 280ms ease-in-out,
-      transform 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open .sidebar-brand > div:last-child,
-  .synapse-sidebar.is-open .sidebar-tools > div:first-child,
-  .synapse-sidebar.is-open .account-name > div {
-    max-width: 190px;
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-  }
-
-  .sidebar-nav {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .sidebar-nav button {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    justify-content: center;
-    gap: 11px;
-    padding-left: 9px;
-    padding-right: 9px;
-    overflow: hidden;
-    transition:
-      background-color 220ms ease-in-out,
-      color 220ms ease-in-out,
-      padding 420ms cubic-bezier(.22, 1, .36, 1),
-      justify-content 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open .sidebar-nav button {
-    justify-content: flex-start;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  /* The icon has a fixed box, so it never shifts or disappears. */
-  .sidebar-nav button > svg,
-  .sidebar-tools svg,
-  .account-avatar,
-  .brand-mark {
-    flex: 0 0 auto;
-  }
-
-  .sidebar-nav button > span {
-    min-width: 0;
-    max-width: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateX(-10px);
-    white-space: nowrap;
-    pointer-events: none;
-    transition:
-      max-width 420ms cubic-bezier(.22, 1, .36, 1),
-      opacity 280ms ease-in-out,
-      transform 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open .sidebar-nav button > span {
-    max-width: 180px;
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-  }
-
-  .sidebar-tools {
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    justify-content: center;
-    transition:
-      justify-content 420ms cubic-bezier(.22, 1, .36, 1),
-      gap 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open .sidebar-tools {
-    justify-content: space-between;
-  }
-
-  .sidebar-tools > div:last-of-type {
-    flex: 0 0 auto;
-  }
-
-  .account-name {
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    grid-template-columns: 28px minmax(0,1fr) auto;
-  }
-
-  .account-name .top-logout {
-    flex: 0 0 auto;
-    opacity: 0;
-    transform: translateX(-8px);
-    pointer-events: none;
-    transition:
-      opacity 260ms ease-in-out,
-      transform 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open .account-name .top-logout {
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-  }
-}
-
 /* Mobile/tablet: sidebar remains expanded and unchanged. */
 @media (max-width: 860px), (hover: none) {
   .clientes-ui .cliente-stage-toggle { min-width:30px; min-height:30px; touch-action:manipulation; }
   .clientes-ui .cliente-stage-body { overflow:hidden; }
   .clientes-ui .cliente-stage.is-collapsed .cliente-stage-body { grid-template-rows:0fr; opacity:.35; overflow:hidden; }
   .clientes-ui .cliente-stage.is-collapsed .cliente-stage-header { margin-bottom:0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .synapse-layout,
-  .synapse-sidebar,
-  .sidebar-brand,
-  .sidebar-brand > div:last-child,
-  .sidebar-tools,
-  .sidebar-tools > div:first-child,
-  .sidebar-nav button,
-  .sidebar-nav button > span,
-  .account-name > div,
-  .account-name .top-logout {
-    transition: none !important;
-    animation: none !important;
-  }
 }
 
 /* Clientes — minimização individual de cada etapa do pipeline */
@@ -539,132 +322,6 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
   .clientes-ui .cliente-stage-body,
   .clientes-ui .cliente-stage-toggle,
   .clientes-ui .cliente-stage-toggle svg {
-    transition: none !important;
-  }
-}
-
-/* ================================================================
-   Synapse — preenchimento dinâmico real da área principal
-   Desktop only. A sidebar fica fixa para manter uma área de hover
-   estável, enquanto o GRID do layout abre uma coluna somente quando
-   o JavaScript adiciona .is-sidebar-open. Assim, o conteúdo principal
-   se desloca para o lado em vez de ficar escondido sob a sidebar.
-   ================================================================ */
-@media (min-width: 861px) and (hover: hover) {
-  /* MUDANÇA DE PREENCHIMENTO DINÂMICO:
-     fechado = nenhuma coluna reservada para a sidebar. */
-  .synapse-layout {
-    grid-template-columns: 0 minmax(0, 1fr) !important;
-    transition: grid-template-columns 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  /* MUDANÇA DE PREENCHIMENTO DINÂMICO:
-     aberto = a grade reserva 280px e empurra o conteúdo principal. */
-  .synapse-layout.is-sidebar-open {
-    grid-template-columns: 280px minmax(0, 1fr) !important;
-  }
-
-  /* A sidebar mantém uma faixa fixa de 76px para receber hover
-     mesmo quando a grade não reserva espaço. Ao abrir, cresce até
-     a mesma largura que a coluna reservada pelo grid. */
-  .synapse-sidebar {
-    position: fixed !important;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 76px;
-    height: 100dvh;
-    box-sizing: border-box;
-    z-index: 100;
-    transition:
-      width 420ms cubic-bezier(.22, 1, .36, 1),
-      padding 420ms cubic-bezier(.22, 1, .36, 1),
-      background-color 300ms ease-in-out,
-      box-shadow 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open {
-    width: 280px;
-  }
-}
-
-/* ================================================================
-   Synapse — correção final do preenchimento dinâmico da sidebar
-   ----------------------------------------------------------------
-   Este override fica por último para neutralizar o comportamento
-   anterior de grid/overlay sem tocar nas media queries mobile.
-   Desktop somente: >= 861px + dispositivo com hover.
-
-   FECHADA: a página usa 100% da largura.
-   ABERTA: a página reduz 280px e se desloca 280px para a direita.
-   Assim a sidebar ocupa espaço REAL e nunca cobre o conteúdo.
-   ================================================================ */
-@media (min-width: 861px) and (hover: hover) {
-  /* Não reservar uma coluna fixa enquanto a sidebar está recolhida. */
-  .synapse-layout {
-    display: block !important;
-    position: relative;
-    width: 100%;
-    min-height: 100dvh;
-  }
-
-  /* A faixa de 76px continua sendo a área de hover da navegação. */
-  .synapse-sidebar {
-    position: fixed !important;
-    inset: 0 auto 0 0;
-    width: 76px !important;
-    height: 100dvh;
-    box-sizing: border-box;
-    z-index: 100;
-    transition:
-      width 420ms cubic-bezier(.22, 1, .36, 1),
-      padding 420ms cubic-bezier(.22, 1, .36, 1),
-      box-shadow 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  .synapse-sidebar.is-open {
-    width: 280px !important;
-    box-shadow: 8px 0 30px rgba(22,24,22,.045);
-  }
-
-  /*
-     >>> CORREÇÃO DO ESTADO MINIMIZADO APLICADA AQUI <<<
-     A faixa de 76px da sidebar continua visível, então o conteúdo
-     precisa começar depois dela. Antes, .synapse-main tinha width:100%
-     e ficava por baixo da sidebar fixa, fazendo a lateral da página
-     parecer cortada. Agora o espaço útil é exatamente o restante da viewport.
-  */
-  .synapse-main {
-    width: calc(100% - 76px) !important;
-    max-width: none !important;
-    margin-left: 76px !important;
-    margin-right: 0 !important;
-    box-sizing: border-box;
-    transition:
-      width 420ms cubic-bezier(.22, 1, .36, 1),
-      margin-left 420ms cubic-bezier(.22, 1, .36, 1),
-      margin-right 420ms cubic-bezier(.22, 1, .36, 1);
-  }
-
-  /*
-     >>> PREENCHIMENTO DINÂMICO APLICADO AQUI <<<
-     Quando o JS adiciona .is-sidebar-open ao .synapse-layout,
-     criamos espaço físico de 280px para a sidebar e deslocamos
-     o conteúdo. Portanto nada fica cortado ou escondido embaixo.
-  */
-  .synapse-layout.is-sidebar-open .synapse-main {
-    width: calc(100% - 280px) !important;
-    max-width: none;
-    margin-left: 280px !important;
-    margin-right: 0 !important;
-  }
-}
-
-/* Fallback de acessibilidade: sem animação quando solicitado pelo SO. */
-@media (prefers-reduced-motion: reduce) and (min-width: 861px) and (hover: hover) {
-  .synapse-layout,
-  .synapse-sidebar,
-  .synapse-main {
     transition: none !important;
   }
 }
@@ -946,3 +603,78 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .clientes-ui .client-notes-trigger { min-height: 0; }
 .clientes-ui .cliente-stage-actions .cliente-pill { white-space: normal !important; overflow-wrap: anywhere; padding: 6px 4px !important; font-size: 11.5px !important; }
 .clientes-ui .cliente-stage-actions.flex { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+/* ================================================================
+   Desktop — layout único e previsível (≥ 861px)
+   1) Barra lateral: sempre visível e fixa. Larga em telas grandes,
+      só ícones (com dica ao passar o mouse) em telas médias.
+   2) Seções: grade de 12 colunas; cada Section declara sua largura
+      (.sec-7 principal, .sec-5 lateral, .sec-12 total). Cartões da
+      mesma linha têm a mesma altura.
+   3) Clientes: quadro com colunas de largura mínima; rola na
+      horizontal em vez de espremer os cartões.
+   4) Uma única cor de ação (--ember) em botões, links e atalhos.
+   ================================================================ */
+@media (min-width: 861px) {
+  .synapse-layout { grid-template-columns: 248px minmax(0, 1fr); }
+  .synapse-sidebar { padding: 26px 16px; width: auto; }
+  .synapse-main { padding: 30px clamp(28px, 3vw, 48px) 40px; max-width: 1560px; }
+  .workspace-header { margin-bottom: 26px; }
+
+  .pop {
+    display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 22px; align-items: stretch !important;
+  }
+  .pop > * { grid-column: 1 / -1; }
+  .pop > .mb-8 { display: flex; flex-direction: column; grid-column: span 12; margin-bottom: 0 !important; }
+  .pop > .mb-8.sec-7 { grid-column: span 7; }
+  .pop > .mb-8.sec-5 { grid-column: span 5; }
+  .pop > .mb-8 > .flex.items-center.justify-between { min-height: 34px; margin-bottom: 12px !important; }
+  .pop > .mb-8 > div:not(.flex) { flex: 1 1 auto; }
+}
+
+/* Telas médias: só ícones, com o mesmo layout de sempre. */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .synapse-layout { grid-template-columns: 76px minmax(0, 1fr); }
+  .synapse-sidebar { padding: 22px 10px; align-items: center; overflow: hidden; }
+  .sidebar-brand { padding: 0 0 22px; justify-content: center; }
+  .sidebar-brand > div:last-child,
+  .sidebar-nav button > span,
+  .sidebar-tools > div:first-child > span,
+  .account-name > div,
+  .account-name .top-logout { display: none !important; }
+  .sidebar-nav { width: 100%; }
+  .sidebar-nav button { justify-content: center; padding: 11px 0; }
+  .sidebar-bottom { width: 100%; padding: 14px 0 0; }
+  .sidebar-tools { flex-direction: column; gap: 10px; }
+  .sidebar-tools > div:last-of-type { flex-direction: column; }
+  .account-name { grid-template-columns: 1fr; justify-items: center; }
+  .synapse-main { padding-inline: 24px; }
+  .pop > .mb-8.sec-7, .pop > .mb-8.sec-5 { grid-column: span 12; }
+}
+
+/* Clientes no desktop: colunas com largura mínima confortável. */
+@media (min-width: 861px) {
+  .synapse-main .clientes-ui .clientes-pipeline {
+    grid-template-columns: repeat(5, minmax(204px, 1fr)) !important;
+    gap: 16px; align-items: start;
+    overflow-x: auto; padding-bottom: 12px;
+    scrollbar-width: thin;
+  }
+  .synapse-main .clientes-ui .cliente-stage { min-width: 0; }
+  .synapse-main .clientes-ui .cliente-stage-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* Uma cor de ação: verde da marca em botão primário, atalho flutuante e links. */
+.header-primary, .ai-fab {
+  background: var(--ember) !important; color: var(--on-accent) !important;
+  border-color: var(--ember) !important;
+}
+.synapse-main .pop button[style*="var(--ember)"] { font-weight: 600; }
+
+/* Etapas do autorreconhecimento: 3 por linha, sem quebrar palavras no meio. */
+.synapse-main .stage-steps { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.synapse-main .stage-steps button { white-space: nowrap; overflow-wrap: normal; word-break: normal; padding: 9px 6px !important; }
+
+/* Atalhos "ver →" e ações de linha nunca quebram em duas linhas. */
+.synapse-main .pop .space-y-2 > div > button { white-space: nowrap; flex-shrink: 0; }

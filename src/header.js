@@ -135,23 +135,9 @@ function TopBar({
   toggleTheme,
   user,
   onLogout,
-  onSettings,
-  onSidebarChange
+  onSettings
 }) {
   const fileInputRef = React.useRef(null);
-  const sidebarRef = React.useRef(null);
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const openSidebar = React.useCallback(() => {
-    setSidebarOpen(true);
-    onSidebarChange?.(true);
-  }, [onSidebarChange]);
-  const closeSidebarIfUnfocused = React.useCallback(event => {
-    const next = event?.relatedTarget;
-    if (!next || !sidebarRef.current?.contains(next)) {
-      setSidebarOpen(false);
-      onSidebarChange?.(false);
-    }
-  }, []);
   const excelInputRef = React.useRef(null);
   const items = [
     { key: 'painel', label: 'Painel', IconC: LayoutDashboard },
@@ -220,12 +206,7 @@ function TopBar({
   return React.createElement(
     'aside',
     {
-      ref: sidebarRef,
-      className: 'synapse-sidebar' + (sidebarOpen ? ' is-open' : ''),
-      onMouseEnter: openSidebar,
-      onMouseLeave: closeSidebarIfUnfocused,
-      onFocusCapture: openSidebar,
-      onBlurCapture: closeSidebarIfUnfocused,
+      className: 'synapse-sidebar',
       'aria-label': 'Navegação principal'
     },
     React.createElement(

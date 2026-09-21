@@ -1,9 +1,10 @@
 /* Painel inicial (Hoje, Foco, Ações, Pipeline, Perdas). */
 
-function Section({ title, right, children }) {
+// span: largura (de 12 colunas) da seção no desktop — 7 principal, 5 lateral, 12 largura total.
+function Section({ title, right, children, span }) {
   return React.createElement(
     'div',
-    { className: 'mb-8' },
+    { className: 'mb-8' + (span ? ' sec-' + span : '') },
     React.createElement(
       'div',
       { className: 'flex items-center justify-between mb-3' },
@@ -41,6 +42,7 @@ function FocusSection({ dailyFocus, goTo }) {
   return React.createElement(
     Section,
     {
+      span: 7,
       title: 'Foco do Dia',
       right: React.createElement(
         'button',
@@ -77,7 +79,7 @@ function LossSection({ lossReasons }) {
   return lossReasons.length
     ? React.createElement(
         Section,
-        { title: 'Motivos de perda' },
+        { title: 'Motivos de perda', span: 12 },
         React.createElement('div', { className: 'loss-grid' }, rows)
       )
     : null;
@@ -150,6 +152,7 @@ function PainelHoje({ todayCheckin, pinnedPhrase, onCalm, goTo }) {
   return React.createElement(
     Section,
     {
+      span: 7,
       title: 'Hoje',
       right: React.createElement(
         'button',
@@ -226,7 +229,7 @@ function PainelAcoes({ followUps, pendingReminders, goTo }) {
     );
   return React.createElement(
     Section,
-    { title: 'Ações sugeridas' },
+    { title: 'Ações sugeridas', span: 5 },
     rows.length
       ? React.createElement('div', { className: 'space-y-2' }, rows)
       : React.createElement(
@@ -261,7 +264,7 @@ function PainelPipeline({ clients }) {
   );
   return React.createElement(
     Section,
-    { title: 'Pipeline' },
+    { title: 'Pipeline', span: 5 },
     React.createElement('div', { className: 'space-y-2' }, rows)
   );
 }
@@ -307,7 +310,11 @@ function Painel({
       ]
     );
     sections.push(
-      React.createElement(Section, { key: 'corr', title: 'Mentalidade × resultado' }, corrBody)
+      React.createElement(
+        Section,
+        { key: 'corr', title: 'Mentalidade × resultado', span: 12 },
+        corrBody
+      )
     );
   }
   return React.createElement('div', { className: 'pop' }, sections);

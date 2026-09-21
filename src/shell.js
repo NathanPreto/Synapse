@@ -100,10 +100,6 @@ function Shell({ children, theme }) {
  .pop > .mb-8 > div:not(.flex) { background:var(--surface); border:1px solid var(--border); border-radius:20px !important; padding:20px !important; }
  @media (min-width: 768px) {
    .pop { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:18px; align-items:start; }
-   .pop > .mb-8:nth-child(1) { grid-column:span 7; }
-   .pop > .mb-8:nth-child(2) { grid-column:span 5; }
-   .pop > .mb-8:nth-child(3) { grid-column:span 7; }
-   .pop > .mb-8:nth-child(4) { grid-column:span 5; }
  }
  @media (max-width: 767px) {
    .pop { display:grid; grid-template-columns:1fr; gap:16px; }
@@ -195,8 +191,6 @@ function Shell({ children, theme }) {
  }
  .loss-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
  @media (min-width:768px) {
-   .pop > .mb-8:nth-child(5) { grid-column:span 6; }
-   .pop > .mb-8:nth-child(6) { grid-column:span 6; }
  }
  @media (max-width:767px) {
    .correlation-card { grid-template-columns:1fr; }
@@ -402,23 +396,11 @@ function Shell({ children, theme }) {
  .pop > .mb-8 { min-width: 0; }
  .pop > .mb-8 > div:not(.flex),
  .pop > .p-4.rounded { width: 100%; box-sizing: border-box; }
- .pop > .mb-8:nth-child(1),
- .pop > .mb-8:nth-child(2),
- .pop > .mb-8:nth-child(3),
- .pop > .mb-8:nth-child(4) { min-width: 0; }
  @media (min-width: 768px) {
    .pop { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
-   .pop > .mb-8:nth-child(1) { grid-column: span 8; }
-   .pop > .mb-8:nth-child(2) { grid-column: span 4; }
-   .pop > .mb-8:nth-child(3) { grid-column: span 8; }
-   .pop > .mb-8:nth-child(4) { grid-column: span 4; }
  }
  @media (min-width: 1280px) {
    .pop { gap: 24px; }
-   .pop > .mb-8:nth-child(1) { grid-column: span 8; }
-   .pop > .mb-8:nth-child(2) { grid-column: span 4; }
-   .pop > .mb-8:nth-child(3) { grid-column: span 8; }
-   .pop > .mb-8:nth-child(4) { grid-column: span 4; }
  }
  /* Kanban ocupa toda a largura disponível */
  .pop .overflow-x-auto { width: 100%; box-sizing: border-box; }

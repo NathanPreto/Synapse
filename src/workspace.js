@@ -23,7 +23,6 @@ function SynapseWorkspace({ user, onLogout, account }) {
   const [loadError, setLoadError] = useState('');
   const [loadNonce, setLoadNonce] = useState(0);
   const [tab, setTab] = useState('painel');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkins, setCheckins] = useState([]);
   const [clients, setClients] = useState([]);
   const [reminders, setReminders] = useState([]);
@@ -1192,7 +1191,7 @@ function SynapseWorkspace({ user, onLogout, account }) {
       ),
     React.createElement(
       'div',
-      { className: 'synapse-layout' + (sidebarOpen ? ' is-sidebar-open' : '') },
+      { className: 'synapse-layout' },
       React.createElement(TopBar, {
         streak,
         tab,
@@ -1204,8 +1203,7 @@ function SynapseWorkspace({ user, onLogout, account }) {
         toggleTheme,
         user,
         onLogout,
-        onSettings: () => setSettingsOpen(true),
-        onSidebarChange: setSidebarOpen
+        onSettings: () => setSettingsOpen(true)
       }),
       React.createElement(
         'main',
