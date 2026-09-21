@@ -1,0 +1,19 @@
+{
+  "name": "synapse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Synapse — CRM de vendas + mentalidade comercial",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "format": "prettier --write \"*.js\" \"services/**/*.js\" \"src/**/*.js\" \"tests/**/*.js\" \"supabase/functions/**/*.ts\"",
+    "format:check": "prettier --check \"*.js\" \"services/**/*.js\" \"src/**/*.js\" \"tests/**/*.js\" \"supabase/functions/**/*.ts\"",
+    "build:css": "tailwindcss -c tailwind.config.js -i src/tailwind.input.css -o tailwind.css --minify",
+    "build:schema": "node scripts/build-schema.mjs",
+    "test": "node --test tests/*.test.js"
+  },
+  "devDependencies": {
+    "prettier": "3.8.1",
+    "tailwindcss": "3.4.17"
+  }
+}

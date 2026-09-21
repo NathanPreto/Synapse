@@ -1,4 +1,4 @@
-(function(){
+(function () {
   // Contrato público consumido pelo frontend.
   // A implementação concreta fica isolada em services/supabase.js.
   const provider = window.SynapseSupabase;
@@ -11,6 +11,9 @@
     deleteCloudRow: provider?.deleteCloudRow,
     syncSettings: provider?.syncSettings,
     loadSynapseData: provider?.loadSynapseData,
+    loadProfile: provider?.loadProfile,
+    saveProfile: provider?.saveProfile,
+    deleteWellbeingData: provider?.deleteWellbeingData,
     askAI: provider?.askAI,
     deleteAccount: provider?.deleteAccount
   };

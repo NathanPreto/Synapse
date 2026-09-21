@@ -1,91 +1,75 @@
 # Synapse
 
-CRM de vendas + mentalidade comercial, agora com autenticação e persistência em nuvem.
+CRM de vendas + apoio ao bem-estar do vendedor. PWA estático (React 18 via CDN, sem bundler), com Supabase (Auth, Postgres/RLS, Edge Functions) e assistente **Syn** (Google Gemini) atrás de uma Edge Function segura.
 
 ## Estrutura
 
-- `index.html` - entrada da aplicação
-- `styles.css` - sistema visual e responsividade
-- `app.js` - aplicação React e regras da interface
-- `backend.js` - contrato público entre frontend e backend
-- `services/supabase.js` - implementação do backend sobre Supabase
-- `synapse-runtime.js` - utilidades de runtime, segurança, armazenamento local e planilhas
-- `config.js` - URL e publishable key públicas do Supabase
-- `supabase.sql` - tabelas, RLS, permissões e trigger de perfil
+| Caminho | Função |
+| --- | --- |
+| `index.html`, `styles.css`, `sw.js`, `manifest.json` | Entrada, estilos, service worker e manifest do PWA |
+| `tailwind.css` | CSS compilado (`npm run build:css`); veja "Tailwind" |
+| `src/*.js` | Componentes React (scripts clássicos; a ordem em `index.html` importa) |
+| `src/safety.js` | Detecção de crise/sofrimento (cópia de `supabase/functions/_shared/safety.js`) |
+| `src/vault.js` | Cofre de bem-estar (AES-GCM, PBKDF2) |
+| `src/whatsapp.js` | Monta links `wa.me` a partir do contato do cliente |
+| `services/persistence.js` | Cache local, fila offline, dead-letter e sincronização |
+| `services/supabase.js`, `backend.js` | Acesso ao Supabase e contrato público usado pela UI |
+| `synapse-runtime.js` | Log, sanitização, armazenamento local e planilhas |
+| `supabase/migrations/` | Fonte da verdade do schema (`supabase.sql` é gerado) |
+| `supabase/functions/` | `synapse-ai` e `delete-account` |
+| `tests/` | Testes de comportamento (`node --test`) |
 
-## Stack
+## Desenvolvimento
 
-- React 18 via CDN
-- Tailwind CDN
-- SheetJS CDN
-- Supabase JS v2 via CDN
-- Supabase Auth + PostgreSQL + Row Level Security
-- Vercel para hospedagem
+Requer Node 22.18 ou superior.
 
-## Configuração do Supabase
+```bash
+npm install
+npm test                # testes (node:test)
+npm run format:check    # prettier
+npm run build:css       # gera tailwind.css (obrigatório antes do deploy)
+npm run build:schema    # regenera supabase.sql a partir das migrations
+```
 
-1. Crie um projeto Free no Supabase.
-2. Abra **SQL Editor > New query**.
-3. Cole o conteúdo de `supabase.sql` e execute.
-4. Em **Authentication > URL Configuration**, configure a URL pública da Vercel como Site URL e Redirect URL depois do primeiro deploy.
-5. Confirme que a confirmação de e-mail está como você deseja para os testes.
+Sirva a pasta com qualquer servidor estático (`npx serve .`). Ao adicionar um arquivo em `src/`, registre-o em `index.html` e em `sw.js` e incremente a versão (`?v=`/`CACHE_VERSION`).
 
-## Configuração do frontend
+### Tailwind
 
-Edite `config.js` apenas com a URL do projeto e a **Publishable key** do Supabase.
+O CDN de runtime não é mais usado. O CSS é compilado com Tailwind 3.4.17 a partir de `tailwind.config.js` e `src/tailwind.input.css`. O `tailwind.css` versionado é um baseline mínimo para o app abrir sem build; a Vercel o sobrescreve com o build real (`vercel.json`) e o CI também roda o build.
 
-Nunca coloque uma `sb_secret_...` ou `service_role` no frontend.
+## Deploy
 
-## Vercel
+### 1. Banco (antes do frontend)
 
-O projeto é estático. Substitua os arquivos no GitHub e deixe a Vercel fazer o novo deploy pelo repositório conectado.
+```bash
+supabase link --project-ref <ref>
+supabase db push
+```
 
-## Migração
+As migrations adicionam consentimentos LGPD, cotas de uso da IA, restrições de valores, gatilhos de `updated_at` e resolução de conflito por registro (`client_updated_at`). Na primeira entrada após o deploy, todos os usuários precisam aceitar os consentimentos novamente.
 
-Na primeira entrada de uma conta nova, o Synapse procura dados da versão local anterior neste navegador. Se encontrar clientes, lembretes, check-ins ou modelos, oferece a importação para a conta.
+### 2. Edge Functions
 
-## Dados por usuário
+```bash
+supabase secrets set GEMINI_API_KEY=... ALLOWED_ORIGINS=https://seu-dominio.vercel.app
+supabase functions deploy synapse-ai
+supabase functions deploy delete-account
+```
 
-O frontend envia o token da sessão do usuário para o Supabase. As tabelas têm RLS e cada política limita acesso ao `auth.uid()` correspondente ao `user_id`.
+Opcionais: `GEMINI_MODELS` (lista separada por vírgula, confirme os nomes na sua conta), `AI_PER_MINUTE` (6), `AI_PER_DAY` (80), `AI_GLOBAL_PER_DAY` (3000), `AI_MAX_OUTPUT_TOKENS` (450). `verify_jwt = true` está fixado em `supabase/config.toml`. Não use `*` em `ALLOWED_ORIGINS`.
 
-## IA
+### 3. Frontend (Vercel)
 
-A integração direta com Gemini continua separada nesta versão e não foi redesenhada. A próxima etapa recomendada é mover a chamada para uma função de servidor/Edge Function antes de usar a IA em produção pública.
+O `vercel.json` executa `npm run build:css`. `config.js` só recebe a URL e a **publishable key** do Supabase. Nunca coloque `service_role` ou `sb_secret` no frontend. Em Authentication > URL Configuration, cadastre a URL pública.
 
-## Refatoração técnica — 2026-09
+## Segurança e privacidade
 
-A refatoração preserva `styles.css` e `config.js` byte a byte. O objetivo foi melhorar organização, robustez e observabilidade sem redesenhar a interface.
+- **Syn**: o prompt e o contexto (clientes, lembretes, humor numérico) são montados no servidor a partir do banco; o cliente só envia as mensagens. Há verificação de usuário, CORS restrito, cotas por minuto/dia e globais (falham fechadas) e exigência de consentimento.
+- **Crise**: mensagens com risco de vida recebem resposta fixa com CVV 188 e SAMU 192 sem chamar o modelo; sofrimento leve segue ao modelo com instrução de acolhimento. Não substitui terapia.
+- **Cofre**: opcional; criptografa check-ins e diário no dispositivo. A senha do cofre não é recuperável.
+- **Sincronização**: o registro com `client_updated_at` mais novo vence; escritas obsoletas são ignoradas pelo gatilho. Erros permanentes (SQLSTATE 22/23/42501) vão para dead-letter em vez de travar a fila.
+- **Textos legais** (`privacidade.html`, `termos.html`) são um ponto de partida e **precisam de revisão jurídica** antes do lançamento público, incluindo a identificação do controlador.
 
-### Organização
+## Licença
 
-- `synapse-runtime.js` — logging, sanitização, armazenamento local e processamento de planilhas usados pelo runtime.
-- `services/supabase.js` — implementação concreta do backend sobre Supabase; o cliente Supabase permanece encapsulado neste módulo.
-- `backend.js` — contrato público consumido pelo frontend, sem expor o cliente Supabase.
-- `app.js` — componentes React, estado e regras da interface.
-
-### Segurança e dados
-
-- O frontend continua usando somente a configuração pública do Supabase existente em `config.js`.
-- Nenhuma chave `service_role` ou `sb_secret` foi adicionada.
-- A sincronização continua respeitando o isolamento por `user_id` e RLS.
-- Sincronizações automáticas são upsert-only; exclusões acontecem apenas por ações explícitas do usuário.
-- Entradas provenientes de backups e planilhas passam por sanitização antes de serem colocadas no estado.
-
-### Importação de planilhas
-
-- Arquivos maiores que 15 MB são rejeitados com mensagem orientativa.
-- Arquivos corrompidos, vazios ou sem cabeçalho são tratados sem quebrar a aplicação.
-- O mapeamento de colunas continua compatível com os aliases existentes.
-- O usuário é avisado quando a coluna de nome não foi reconhecida.
-- O processamento pesado em memória usa `DocumentFragment` para preparar amostras sem inserir nós individualmente no DOM.
-
-### Dependências externas
-
-- React e ReactDOM: 18.3.1, com SRI SHA-512.
-- SheetJS: 0.20.3, com SRI SHA-384.
-- Tailwind Play CDN: 3.4.17, versão fixada. O Play CDN é um runtime gerado pelo próprio CDN e não oferece as condições necessárias para SRI/CORS; por isso não foi inventado um hash que poderia bloquear a aplicação.
-- Supabase JS: 2.116.0, versão fixada via UMD CDN.
-
-### Observabilidade
-
-Falhas globais de JavaScript e Promises não tratadas são capturadas por `core/logger.js`. Operações assíncronas relevantes em carregamento, sincronização, importação e exclusão em nuvem emitem estado de processamento para a interface.
+Todos os direitos reservados (veja `LICENSE`).
