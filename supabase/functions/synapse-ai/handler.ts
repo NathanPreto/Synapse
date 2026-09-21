@@ -58,6 +58,21 @@ function models(deps: Deps) {
 
 export type Message = { role: 'user' | 'model'; text: string };
 
+/** A Syn responde em texto simples: remove marcas de markdown que o modelo deixe escapar. */
+export function stripMarkdown(text: string): string {
+  return String(text ?? '')
+    .replace(/```[a-z]*\n?/gi, '')
+    .replace(/`([^`\n]+)`/g, '$1')
+    .replace(/\[([^\]\n]+)\]\((?:https?:\/\/|mailto:)[^)\s]*\)/g, '$1')
+    .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, '$2')
+    .replace(/(^|[\s(])\*(?=\S)([^*\n]*?\S)\*(?=$|[\s).,;:!?])/g, '$1$2')
+    .replace(/(^|[\s(])_(?=\S)([^_\n]*?\S)_(?=$|[\s).,;:!?])/g, '$1$2')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s{0,3}>\s?/gm, '')
+    .replace(/^\s*([-*_])\1{2,}\s*$/gm, '')
+    .replace(/\*\*|__/g, '');
+}
+
 export function normalizeMessages(value: unknown): Message[] {
   if (!Array.isArray(value) || value.length === 0 || value.length > MAX_MESSAGES) {
     throw new Error('Histórico de conversa inválido.');
@@ -257,7 +272,7 @@ export function createHandler(deps: Deps) {
             }
             return json({ code: 'UPSTREAM_EMPTY', error: 'A Syn não retornou uma resposta.' }, 502);
           }
-          answer = answer.slice(0, 6000);
+          answer = stripMarkdown(answer).trim().slice(0, 6000);
           if ((risk === 'distress' || risk === 'crisis_followup') && !answer.includes('188')) {
             answer += Safety.DISTRESS_NOTE;
           }

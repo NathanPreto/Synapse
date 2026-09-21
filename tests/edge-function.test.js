@@ -295,3 +295,42 @@ test('Sem GEMINI_API_KEY não consome cota', async () => {
   assert.equal(res.status, 503);
   assert.equal(calls.quota.length, 0);
 });
+
+test('stripMarkdown remove marcas de markdown sem perder o texto', () => {
+  const cases = [
+    ['**Importante:** ligue hoje', 'Importante: ligue hoje'],
+    ['Use *calma* e __foco__.', 'Use calma e foco.'],
+    ['## Plano\nfale com `Ana`', 'Plano\nfale com Ana'],
+    ['veja [o guia](https://x.com/a) agora', 'veja o guia agora'],
+    ['1. Ligue\n2. Envie', '1. Ligue\n2. Envie'],
+    ['5 * 3 = 15 e a_b_c', '5 * 3 = 15 e a_b_c'],
+    ['---\ntexto', '\ntexto']
+  ];
+  for (const [input, expected] of cases) assert.equal(mod.stripMarkdown(input), expected, input);
+});
+
+test('a resposta da Syn sai sem asteriscos mesmo que o modelo use markdown', async () => {
+  const { deps } = makeDeps({
+    fetch: async () =>
+      new Response(
+        JSON.stringify({
+          candidates: [
+            { content: { parts: [{ text: '**Passo 1:** retome o contato.\n* Ligue hoje' }] } }
+          ]
+        }),
+        { status: 200 }
+      )
+  });
+  const res = await mod.createHandler(deps)(req());
+  const data = await res.json();
+  assert.equal(data.answer.includes('**'), false);
+  assert.match(data.answer, /Passo 1: retome o contato\./);
+});
+
+test('o prompt exige texto simples e resposta direta, sem descrever o app', async () => {
+  const { deps, calls } = makeDeps();
+  await mod.createHandler(deps)(req());
+  const prompt = calls.fetch[0].body.system_instruction.parts[0].text;
+  assert.match(prompt, /NÃO use markdown/);
+  assert.match(prompt, /DIRETAMENTE/);
+});

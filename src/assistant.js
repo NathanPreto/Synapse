@@ -1,9 +1,21 @@
 /* Assistente Syn: formatação segura de mensagens e janela de chat. */
 
+/* A Syn responde em texto simples: remove marcas de markdown que possam escapar (**negrito**, # títulos, `código`). */
+function stripSynMarkdown(text) {
+  return String(text || '')
+    .replace(/```[a-z]*\n?/gi, '')
+    .replace(/`([^`\n]+)`/g, '$1')
+    .replace(/\[([^\]\n]+)\]\((?:https?:\/\/|mailto:)[^)\s]*\)/g, '$1')
+    .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, '$2')
+    .replace(/(^|[\s(])\*(?=\S)([^*\n]*?\S)\*(?=$|[\s).,;:!?])/g, '$1$2')
+    .replace(/(^|[\s(])_(?=\S)([^_\n]*?\S)_(?=$|[\s).,;:!?])/g, '$1$2')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s{0,3}>\s?/gm, '')
+    .replace(/^\s*([-*_])\1{2,}\s*$/gm, '')
+    .replace(/\*\*|__/g, '');
+}
 function formatSynMessage(text) {
-  const value = String(text || '')
-    .replace(/\r\n?/g, '\n')
-    .trim();
+  const value = stripSynMarkdown(text).replace(/\r\n?/g, '\n').trim();
   if (!value) return [{ type: 'text', text: '' }];
   const lines = value.split('\n');
   const blocks = [];

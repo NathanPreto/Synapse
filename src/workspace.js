@@ -1046,49 +1046,6 @@ function SynapseWorkspace({ user, onLogout, account }) {
     setTab('clientes');
     alert(`Importação concluída.\n\nNovos clientes: ${added}\nClientes atualizados: ${updated}`);
   }
-  function getSynLocalAnswer(question) {
-    const normalized = question
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-    if (/^(oi|ola|bom dia|boa tarde|boa noite|hey|hello)\b/.test(normalized))
-      return 'Olá! Eu sou a Syn. Posso tirar dúvidas básicas sobre o Synapse e sobre organização comercial.';
-    if (
-      /o que (e|é) o synapse|sobre o synapse|pra que serve o synapse|para que serve o synapse/.test(
-        normalized
-      )
-    )
-      return 'O Synapse é seu espaço para organizar clientes, lembretes, check-ins e o foco do dia em um só lugar.';
-    if (
-      /o que (voce|vc|tu) (pode|consegue) fazer|como voce pode me ajudar|como vc pode me ajudar|o que voce faz|o que vc faz/.test(
-        normalized
-      )
-    )
-      return 'Posso te ajudar a usar o Synapse, organizar clientes e próximos passos, criar lembretes, explicar as áreas do app e dar dicas simples de organização comercial e vendas.';
-    if (
-      /dica|dicas|organizacao comercial|organizar minhas vendas|organizar as vendas/.test(
-        normalized
-      )
-    )
-      return 'Aqui vão 3 dicas práticas:\n1. Registre sempre o próximo passo de cada cliente.\n2. Separe o que precisa de ação hoje do que pode esperar.\n3. Termine o dia revisando os follow-ups para não deixar oportunidades paradas.';
-    if (
-      /indisponivel|indisponível|por que.*parou|porque.*parou|por que.*nao respondeu|porque.*nao respondeu/.test(
-        normalized
-      )
-    )
-      return 'Quando a Syn fica indisponível, normalmente é porque o serviço de resposta atingiu um limite temporário ou demorou para responder. Seus dados do Synapse continuam separados e salvos; você pode tentar novamente em alguns instantes.';
-    if (/cliente|clientes|cadastro de cliente/.test(normalized))
-      return 'Na área Clientes você pode cadastrar e editar clientes, além de acompanhar informações comerciais.';
-    if (/lembrete|lembretes/.test(normalized))
-      return 'Na área Lembretes você pode criar e acompanhar lembretes para não perder seus próximos passos.';
-    if (/check.?in|mental|foco do dia/.test(normalized))
-      return 'O Synapse também reúne check-ins, Mental e Foco do Dia para apoiar sua organização e rotina comercial.';
-    if (/excel|importar cliente|importacao|backup|exportar/.test(normalized))
-      return 'O Synapse permite importar clientes do Excel e importar ou exportar um backup dos seus dados.';
-    if (/como usar|por onde comeco|como funciona/.test(normalized))
-      return 'Comece pelo Painel para ter uma visão geral. Depois, use Clientes para organizar sua carteira e Lembretes para registrar os próximos passos.';
-    return '';
-  }
   async function deleteAccount() {
     if (deleteAccountBusy || typeof backendDeleteAccount !== 'function') return;
     setDeleteAccountBusy(true);
@@ -1152,12 +1109,6 @@ function SynapseWorkspace({ user, onLogout, account }) {
       return;
     }
     setAiBusy(true);
-    const localAnswer = risk ? null : getSynLocalAnswer(question);
-    if (localAnswer) {
-      pushSynMessages({ role: 'model', text: localAnswer });
-      setAiBusy(false);
-      return;
-    }
     try {
       // O servidor monta o prompt e o contexto (clientes, lembretes, humor) a partir do banco.
       const history = nextMessages
