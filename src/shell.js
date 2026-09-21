@@ -71,7 +71,8 @@ function Shell({ children, theme }) {
         minHeight: '100vh',
         fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       },
-      className: 'w-full flex flex-col'
+      className: 'synapse-shell w-full flex flex-col',
+      'data-theme': dark ? 'dark' : 'light'
     },
     React.createElement(
       'style',
