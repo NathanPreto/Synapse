@@ -1,0 +1,23 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Formatação
+        run: npm run format:check
+      - name: Testes
+        run: npm test
+      - name: Schema em sincronia com as migrations
+        run: npm run build:schema && git diff --exit-code supabase.sql
+      - name: Build do CSS
+        run: npm run build:css
