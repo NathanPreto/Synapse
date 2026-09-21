@@ -528,31 +528,11 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
   margin-bottom: 0;
 }
 
+/* Celular/toque: a minimização de etapas funciona igual ao desktop, sem animação longa. */
 @media (max-width: 860px), (hover: none) {
-  .clientes-ui .cliente-stage-body {
-    grid-template-rows: 1fr;
-    opacity: 1;
-    overflow: visible;
-    transition: none;
-  }
-
-  .clientes-ui .cliente-stage.is-collapsed .cliente-stage-body {
-    grid-template-rows: 1fr;
-    opacity: 1;
-  }
-
-  .clientes-ui .cliente-stage.is-collapsed .cliente-stage-header {
-    margin-bottom: 8px;
-  }
-
-  .clientes-ui .cliente-stage-toggle {
-    transition: none;
-  }
-
-  .clientes-ui .cliente-stage-toggle svg {
-    transform: none !important;
-    transition: none;
-  }
+  .clientes-ui .cliente-stage-body { transition: grid-template-rows 240ms ease-in-out, opacity 160ms ease-in-out; }
+  .clientes-ui .cliente-stage.is-collapsed .cliente-stage-body { pointer-events: none; }
+  .clientes-ui .cliente-stage-toggle { min-width: 36px; min-height: 36px; width: 36px; height: 36px; flex: 0 0 36px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
