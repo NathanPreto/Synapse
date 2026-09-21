@@ -249,7 +249,14 @@ function TopBar({
       items.map(({ key, label, IconC }) =>
         React.createElement(
           'button',
-          { key, onClick: () => setTab(key), className: tab === key ? 'active' : '', title: label },
+          {
+            key,
+            onClick: () => setTab(key),
+            className: tab === key ? 'active' : '',
+            title: label,
+            'aria-label': label,
+            'aria-current': tab === key ? 'page' : undefined
+          },
           React.createElement(IconC, { size: 17 }),
           React.createElement('span', null, label)
         )

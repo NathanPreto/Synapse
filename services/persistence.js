@@ -103,6 +103,7 @@
         notes: r.notes || '',
         lost_reason: r.lostReason || '',
         lost_tags: Array.isArray(r.lostTags) ? r.lostTags : [],
+        deal_value: window.SynapseMoney.parse(r.value),
         closed_at: r.closedAt || null,
         client_updated_at: at
       };
@@ -158,6 +159,7 @@
         notes: r.notes || '',
         lostReason: r.lost_reason || '',
         lostTags: Array.isArray(r.lost_tags) ? r.lost_tags : [],
+        value: window.SynapseMoney.parse(r.deal_value),
         closedAt: r.closed_at || null
       };
     if (table === 'reminders')

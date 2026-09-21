@@ -14,6 +14,7 @@ function Clientes({
   const excelInputRef = React.useRef(null);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
+  const [addValue, setAddValue] = useState('');
   const [expanded, setExpanded] = useState(null);
   const [collapsedStages, setCollapsedStages] = useState(() => {
     try {
@@ -105,14 +106,23 @@ function Clientes({
           placeholder: 'Contato (telefone/e-mail)',
           className: 'flex-1 p-2 rounded text-sm'
         }),
+        React.createElement('input', {
+          value: addValue,
+          onChange: e => setAddValue(e.target.value),
+          placeholder: 'Valor (R$)',
+          inputMode: 'decimal',
+          'aria-label': 'Valor da negociação em reais',
+          className: 'flex-1 p-2 rounded text-sm'
+        }),
         React.createElement(
           'button',
           {
             onClick: () => {
               if (!name.trim()) return;
-              addClient(name.trim(), contact.trim());
+              addClient(name.trim(), contact.trim(), addValue);
               setName('');
               setContact('');
+              setAddValue('');
               setShowAdd(false);
             },
             className: 'px-3 py-2 rounded text-sm',
@@ -148,7 +158,13 @@ function Clientes({
                 'span',
                 { className: 'cliente-stage-count' },
                 ' · ' + stageClients.length
-              )
+              ),
+              SynapseMoney.sum(stageClients.map(c => c.value)) > 0 &&
+                React.createElement(
+                  'span',
+                  { className: 'cliente-stage-total', title: 'Soma dos valores desta etapa' },
+                  SynapseMoney.format(SynapseMoney.sum(stageClients.map(c => c.value)))
+                )
             ),
             React.createElement(
               'button',
@@ -232,6 +248,7 @@ function WhatsAppButton({ client, templates, compact }) {
 }
 
 function ClientCard({ client, expanded, onToggle, updateClient, removeClient, templates = [] }) {
+  const [notesOpen, setNotesOpen] = useState(false);
   const temp = TEMPS.find(t => t.key === client.temp);
   const idle = daysBetween(client.lastContact || client.createdAt, todayStr());
   const header = React.createElement(
@@ -252,7 +269,13 @@ function ClientCard({ client, expanded, onToggle, updateClient, removeClient, te
         ' \u00B7 ',
         idle,
         'd sem contato'
-      )
+      ),
+      SynapseMoney.parse(client.value) > 0 &&
+        React.createElement(
+          'div',
+          { className: 'cliente-value-badge' },
+          SynapseMoney.format(client.value)
+        )
     ),
     React.createElement(
       'div',
@@ -331,13 +354,27 @@ function ClientCard({ client, expanded, onToggle, updateClient, removeClient, te
           )
         ),
         client.stage === 'perdido' && React.createElement(LostReasonTags, { client, updateClient }),
-        React.createElement('textarea', {
-          value: client.notes || '',
-          onChange: e => updateClient(client.id, { notes: e.target.value }),
-          placeholder: 'Notas',
-          rows: 2,
-          className: 'w-full p-2 rounded text-xs'
-        }),
+        React.createElement(ClientValueField, { client, updateClient }),
+        React.createElement(
+          'button',
+          {
+            type: 'button',
+            className: 'client-notes-trigger' + (client.notes ? ' has-notes' : ''),
+            onClick: () => setNotesOpen(true),
+            'aria-haspopup': 'dialog'
+          },
+          React.createElement(
+            'span',
+            { className: 'client-notes-label' },
+            React.createElement(Pencil, { size: 12 }),
+            ' Observações'
+          ),
+          React.createElement(
+            'span',
+            { className: 'client-notes-preview' },
+            client.notes ? client.notes : 'Toque para escrever observações'
+          )
+        ),
         React.createElement(
           'div',
           { className: 'flex items-center gap-2 flex-wrap', style: { color: 'var(--muted)' } },
@@ -382,7 +419,130 @@ function ClientCard({ client, expanded, onToggle, updateClient, removeClient, te
       style: { background: 'var(--surface)', border: '1px solid var(--border)' }
     },
     header,
-    expandedContent
+    expandedContent,
+    notesOpen &&
+      React.createElement(NotesModal, {
+        title: client.name,
+        value: client.notes || '',
+        onSave: text => updateClient(client.id, { notes: text }),
+        onClose: () => setNotesOpen(false)
+      })
+  );
+}
+
+/* Campo "Valor": edita como texto e só grava ao sair do campo (evita uma gravação por tecla). */
+function ClientValueField({ client, updateClient }) {
+  const [text, setText] = useState(() => SynapseMoney.toInput(client.value));
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    if (!focused) setText(SynapseMoney.toInput(client.value));
+  }, [client.value, focused]);
+  const commit = () => {
+    setFocused(false);
+    const next = SynapseMoney.parse(text);
+    if (next !== SynapseMoney.parse(client.value)) updateClient(client.id, { value: next });
+    setText(SynapseMoney.toInput(next));
+  };
+  return React.createElement(
+    'label',
+    { className: 'client-value-field' },
+    React.createElement('span', { className: 'client-value-label' }, 'Valor'),
+    React.createElement(
+      'span',
+      { className: 'client-value-input' },
+      React.createElement(
+        'span',
+        { className: 'client-value-prefix', 'aria-hidden': 'true' },
+        'R$'
+      ),
+      React.createElement('input', {
+        value: text,
+        inputMode: 'decimal',
+        placeholder: '0,00',
+        maxLength: 18,
+        onFocus: () => setFocused(true),
+        onChange: e => setText(e.target.value),
+        onBlur: commit,
+        onKeyDown: e => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+        },
+        'aria-label': 'Valor da negociação em reais'
+      })
+    )
+  );
+}
+
+/* Janela de observações: caixa grande, rascunho local; fechar (X, Esc, fora da janela) salva. */
+function NotesModal({ title, value, onSave, onClose }) {
+  const [draft, setDraft] = useState(value || '');
+  const ref = React.useRef(null);
+  const draftRef = React.useRef(draft);
+  draftRef.current = draft;
+  const close = React.useCallback(() => {
+    if (draftRef.current !== (value || '')) onSave(draftRef.current);
+    onClose();
+  }, [value, onSave, onClose]);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
+    const onKey = e => {
+      if (e.key === 'Escape') close();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [close]);
+  return React.createElement(
+    'div',
+    {
+      className: 'modal-backdrop',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': 'Observações de ' + title,
+      onMouseDown: e => {
+        if (e.target === e.currentTarget) close();
+      }
+    },
+    React.createElement(
+      'div',
+      { className: 'smart-modal notes-modal' },
+      React.createElement(
+        'div',
+        { className: 'notes-modal-header' },
+        React.createElement(
+          'div',
+          null,
+          React.createElement('div', { className: 'workspace-eyebrow' }, 'Observações'),
+          React.createElement('h2', { className: 'notes-modal-title' }, title)
+        ),
+        React.createElement(
+          'button',
+          { type: 'button', onClick: close, className: 'modal-close', 'aria-label': 'Fechar' },
+          '\u00D7'
+        )
+      ),
+      React.createElement('textarea', {
+        ref,
+        value: draft,
+        maxLength: 20000,
+        onChange: e => setDraft(e.target.value),
+        placeholder: 'Escreva aqui o que combinou, dúvidas, objeções, próximos passos…',
+        className: 'notes-modal-textarea',
+        'aria-label': 'Observações'
+      }),
+      React.createElement(
+        'div',
+        { className: 'notes-modal-footer' },
+        React.createElement('span', { className: 'notes-modal-count' }, draft.length + ' / 20000'),
+        React.createElement(
+          'button',
+          { type: 'button', onClick: close, className: 'notes-modal-done' },
+          'Concluído'
+        )
+      )
+    )
   );
 }
 const TEMPLATE_CATEGORIES = [

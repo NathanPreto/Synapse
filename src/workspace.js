@@ -560,7 +560,7 @@ function SynapseWorkspace({ user, onLogout, account }) {
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 1800);
   }
-  function addClient(name, contact) {
+  function addClient(name, contact, value) {
     name = sanitizeInput(name, 200);
     contact = sanitizeInput(contact, 500);
     const client = {
@@ -574,6 +574,7 @@ function SynapseWorkspace({ user, onLogout, account }) {
       notes: '',
       lostReason: '',
       lostTags: [],
+      value: SynapseMoney.parse(value),
       closedAt: null
     };
     setClients(prev => [...prev, client]);
@@ -586,6 +587,8 @@ function SynapseWorkspace({ user, onLogout, account }) {
     const cleanPatch = sanitizeRecord(patch, ['name', 'contact', 'notes', 'lostReason']);
     if (Array.isArray(patch.lostTags))
       cleanPatch.lostTags = patch.lostTags.map(tag => sanitizeInput(tag, 100));
+    if ('value' in patch) cleanPatch.value = SynapseMoney.parse(patch.value);
+    if (typeof cleanPatch.notes === 'string') cleanPatch.notes = cleanPatch.notes.slice(0, 20000);
     setClients(prev => {
       const current = prev.find(c => c.id === id);
       if (!current) return prev;
@@ -846,6 +849,18 @@ function SynapseWorkspace({ user, onLogout, account }) {
               'descrição',
               'notes'
             ],
+            value: [
+              'valor',
+              'valor da venda',
+              'valor da negociacao',
+              'valor da negociação',
+              'valor do negocio',
+              'valor do negócio',
+              'preco',
+              'preço',
+              'ticket',
+              'value'
+            ],
             lostReason: [
               'motivo perda',
               'motivo da perda',
@@ -865,6 +880,7 @@ function SynapseWorkspace({ user, onLogout, account }) {
             lastContact: 'Último contato',
             createdAt: 'Data de cadastro',
             notes: 'Observações',
+            value: 'Valor (R$)',
             lostReason: 'Motivo da perda'
           };
           const fields = Object.keys(fieldLabels);
@@ -991,6 +1007,7 @@ function SynapseWorkspace({ user, onLogout, account }) {
           createdAt,
           notes: sanitizeInput(valueOf(row, 'notes'), 5000).trim(),
           lostReason: sanitizeInput(valueOf(row, 'lostReason'), 1000).trim(),
+          value: SynapseMoney.parse(valueOf(row, 'value')),
           closedAt: stage === 'fechado' ? lastContact || todayStr() : null
         };
       })

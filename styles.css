@@ -837,3 +837,102 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .auth-screen .consent-card button:not(.consent-submit):not(.auth-submit){color:#171918}
 .auth-screen .consent-row input[type=checkbox]{width:20px;min-width:20px;max-width:20px;height:20px;padding:0;box-sizing:border-box}
 .auth-screen .consent-note{margin:4px 0 16px}
+
+/* ================================================================
+   Celular: navegação inferior (somente ícones), largura total e cantos superiores arredondados
+   ================================================================ */
+@media (max-width: 860px) {
+  .synapse-layout { display: block !important; min-height: 100dvh; }
+
+  .synapse-sidebar,
+  .synapse-sidebar.is-open {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+    display: block !important;
+    z-index: 90;
+    border: 0 !important;
+    border-top: 1px solid var(--border) !important;
+    border-radius: 26px 26px 0 0 !important;
+    background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    backdrop-filter: blur(18px) saturate(1.3);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, .16) !important;
+    overflow: visible !important;
+    transition: none !important;
+  }
+  .synapse-sidebar .sidebar-brand,
+  .synapse-sidebar .sidebar-bottom { display: none !important; }
+
+  .synapse-sidebar .sidebar-nav {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    gap: 4px;
+    overflow: visible;
+    padding: 0;
+  }
+  .synapse-sidebar .sidebar-nav button {
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0;
+    height: 46px;
+    min-height: 46px !important;
+    padding: 0 !important;
+    gap: 0;
+    justify-content: center !important;
+    align-items: center;
+    border-radius: 16px;
+    transition: background-color .18s ease, color .18s ease, transform .18s ease;
+  }
+  .synapse-sidebar .sidebar-nav button > span { display: none !important; }
+  .synapse-sidebar .sidebar-nav button > svg { width: 22px !important; height: 22px !important; }
+  .synapse-sidebar .sidebar-nav button:active { transform: scale(.94); }
+  .synapse-sidebar .sidebar-nav button.active { max-width: 76px; }
+
+  /* Espaço para a barra não cobrir o conteúdo */
+  .synapse-main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box;
+  }
+  /* Botão da Syn acima da barra */
+  .ai-fab { bottom: calc(86px + env(safe-area-inset-bottom)) !important; }
+}
+@media (max-width: 860px) and (prefers-reduced-motion: reduce) {
+  .synapse-sidebar .sidebar-nav button { transition: none; }
+}
+
+/* ---- Cliente: valor e observações ---- */
+.cliente-value-badge { margin-top: 4px; font-size: 12px; font-weight: 700; color: var(--teal); font-variant-numeric: tabular-nums; }
+.cliente-stage-total { margin-left: 6px; font-size: 11px; font-weight: 600; opacity: .85; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.client-value-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.client-value-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.client-value-input { display: flex; align-items: center; flex: 1 1 auto; max-width: 190px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2); overflow: hidden; }
+.client-value-input:focus-within { border-color: var(--teal); }
+.client-value-prefix { padding: 0 0 0 10px; font-size: 12px; color: var(--muted); font-weight: 700; }
+.client-value-input input { flex: 1; min-width: 0; width: 100%; padding: 8px 10px 8px 6px; border: 0 !important; background: transparent !important; color: var(--text); font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; outline: none; }
+.client-notes-trigger { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2); color: var(--text); text-align: left; cursor: pointer; }
+.client-notes-trigger:hover { border-color: var(--teal); }
+.client-notes-label { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.client-notes-preview { font-size: 12px; line-height: 1.45; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; }
+.client-notes-trigger.has-notes .client-notes-preview { color: var(--text); }
+
+.notes-modal { display: flex; flex-direction: column; gap: 14px; width: min(680px, 96vw); }
+.notes-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.notes-modal-title { margin: 4px 0 0; font-family: Newsreader, serif; font-size: 26px; font-weight: 500; letter-spacing: -.03em; overflow-wrap: anywhere; }
+.notes-modal-textarea { width: 100%; box-sizing: border-box; min-height: min(52dvh, 420px); padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface2); color: var(--text); font-size: 15px; line-height: 1.65; resize: vertical; outline: none; font-family: inherit; }
+.notes-modal-textarea:focus { border-color: var(--teal); }
+.notes-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notes-modal-count { font-size: 11px; color: var(--muted2); font-variant-numeric: tabular-nums; }
+.notes-modal-done { min-height: 40px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--teal); color: var(--on-accent); font-weight: 700; }
+@media (max-width: 640px) {
+  .notes-modal { width: 100%; min-height: calc(100dvh - 24px); }
+  .notes-modal-textarea { flex: 1; min-height: 0; resize: none; }
+}

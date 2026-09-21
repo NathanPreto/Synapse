@@ -55,6 +55,7 @@ function makeEnv({ files = new Map(), vault = false, backend: overrides = {} } =
       set: async (k, v) => (files.set(k, v), { key: k, value: v })
     }
   };
+  load(win, 'src/money.js');
   load(win, 'src/vault.js');
   load(win, 'services/persistence.js');
   return {
@@ -81,6 +82,7 @@ const client = (id, name = 'Ana') => ({
   notes: '',
   lostReason: '',
   lostTags: [],
+  value: 0,
   closedAt: null
 });
 
@@ -416,4 +418,22 @@ test('purgeLocal remove fila, cache e rejeitados do usuário', async () => {
   assert.equal((await P.getPending(U)).length, 0);
   assert.equal(await P.readCache(U), null);
   void win;
+});
+
+test('valor da negociação vai para deal_value e volta como value', async () => {
+  const { P, calls } = makeEnv();
+  await P.queueUpsert(U, 'clients', { ...client('c9'), value: '1.500,50' });
+  await P.flush(U);
+  assert.equal(calls.upsert[0].row.deal_value, 1500.5);
+});
+
+test('valor inválido ou negativo vira 0 na gravação', async () => {
+  const { P, calls } = makeEnv();
+  await P.queueUpsert(U, 'clients', { ...client('c10'), value: 'abc' });
+  await P.queueUpsert(U, 'clients', { ...client('c11'), value: -20 });
+  await P.flush(U);
+  assert.deepEqual(
+    calls.upsert.map(c => c.row.deal_value),
+    [0, 0]
+  );
 });

@@ -206,6 +206,7 @@
           notes: clean(r.notes),
           lostReason: clean(r.lost_reason),
           lostTags: Array.isArray(r.lost_tags) ? r.lost_tags.map(clean) : [],
+          value: window.SynapseMoney.parse(r.deal_value),
           closedAt: r.closed_at || null
         })),
         reminders: (reminders.data || []).map(r => ({

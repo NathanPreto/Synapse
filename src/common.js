@@ -51,6 +51,7 @@ const ICONS = {
   ListChecks:
     '<path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/>',
   MessageCircle: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  Pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
   Tag: '<path d="M20.59 13.41L11 3.83A2 2 0 009.58 3.24L3 3v6.58a2 2 0 00.59 1.41l9.58 9.59a2 2 0 002.83 0l4.59-4.59a2 2 0 000-2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'
 };
 function Icon({ path, size = 16, strokeWidth = 2, style, className }) {
@@ -88,6 +89,7 @@ const Edit3 = p => React.createElement(Icon, { path: ICONS.Edit3, ...p });
 const Pin = p => React.createElement(Icon, { path: ICONS.Pin, ...p });
 const ListChecks = p => React.createElement(Icon, { path: ICONS.ListChecks, ...p });
 const Tag = p => React.createElement(Icon, { path: ICONS.Tag, ...p });
+const Pencil = p => React.createElement(Icon, { path: ICONS.Pencil, ...p });
 const MessageCircle = p => React.createElement(Icon, { path: ICONS.MessageCircle, ...p });
 /* ---------- dados e helpers ---------- */
 const STAGES = [
@@ -148,6 +150,7 @@ function normalizeClient(c) {
     notes: sanitizeInput(c.notes),
     lostReason: sanitizeInput(c.lostReason),
     lostTags: Array.isArray(c.lostTags) ? c.lostTags.map(t => sanitizeInput(t, 100)) : [],
+    value: SynapseMoney.parse(c.value),
     closedAt: validDate(c.closedAt) || null
   };
 }
