@@ -148,20 +148,24 @@ function Clientes({
             },
             React.createElement(
               'div',
-              { className: 'flex items-center gap-1.5 text-xs min-w-0' },
-              React.createElement('div', {
-                className: 'w-1.5 h-1.5 rounded-full shrink-0',
-                style: { background: stage.color }
-              }),
-              React.createElement('span', { className: 'cliente-stage-title' }, stage.label),
+              { className: 'cliente-stage-heading' },
               React.createElement(
-                'span',
-                { className: 'cliente-stage-count' },
-                ' · ' + stageClients.length
+                'div',
+                { className: 'flex items-center gap-1.5 text-xs min-w-0' },
+                React.createElement('div', {
+                  className: 'w-1.5 h-1.5 rounded-full shrink-0',
+                  style: { background: stage.color }
+                }),
+                React.createElement('span', { className: 'cliente-stage-title' }, stage.label),
+                React.createElement(
+                  'span',
+                  { className: 'cliente-stage-count' },
+                  ' · ' + stageClients.length
+                )
               ),
               SynapseMoney.sum(stageClients.map(c => c.value)) > 0 &&
                 React.createElement(
-                  'span',
+                  'div',
                   { className: 'cliente-stage-total', title: 'Soma dos valores desta etapa' },
                   SynapseMoney.format(SynapseMoney.sum(stageClients.map(c => c.value)))
                 )
@@ -243,7 +247,7 @@ function WhatsAppButton({ client, templates, compact }) {
       onClick: e => e.stopPropagation()
     },
     React.createElement(MessageCircle, { size: compact ? 16 : 14 }),
-    compact ? null : ' Abrir conversa no WhatsApp'
+    compact ? null : ' Abrir no WhatsApp'
   );
 }
 
@@ -253,22 +257,24 @@ function ClientCard({ client, expanded, onToggle, updateClient, removeClient, te
   const idle = daysBetween(client.lastContact || client.createdAt, todayStr());
   const header = React.createElement(
     'div',
-    { className: 'flex items-center justify-between cursor-pointer', onClick: onToggle },
+    { className: 'cliente-card-header cursor-pointer', onClick: onToggle },
     React.createElement(
       'div',
-      null,
-      React.createElement('div', null, client.name),
+      { className: 'cliente-card-main' },
+      React.createElement('div', { className: 'cliente-card-name' }, client.name),
       React.createElement(
         'div',
-        { className: 'text-xs flex items-center gap-1.5 mt-0.5', style: { color: 'var(--muted)' } },
+        { className: 'cliente-card-meta text-xs', style: { color: 'var(--muted)' } },
         React.createElement(
           'span',
-          { style: { color: temp === null || temp === void 0 ? void 0 : temp.color } },
+          {
+            className: 'cliente-card-temp',
+            style: { color: temp === null || temp === void 0 ? void 0 : temp.color }
+          },
           temp === null || temp === void 0 ? void 0 : temp.label
         ),
         ' \u00B7 ',
-        idle,
-        'd sem contato'
+        idle + 'd sem contato'
       ),
       SynapseMoney.parse(client.value) > 0 &&
         React.createElement(
@@ -279,7 +285,7 @@ function ClientCard({ client, expanded, onToggle, updateClient, removeClient, te
     ),
     React.createElement(
       'div',
-      { className: 'flex items-center gap-2' },
+      { className: 'cliente-card-side' },
       React.createElement(WhatsAppButton, { client, templates, compact: true }),
       React.createElement(ChevronDown, {
         size: 14,

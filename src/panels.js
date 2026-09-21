@@ -110,11 +110,23 @@ function PainelHoje({ todayCheckin, pinnedPhrase, onCalm, goTo }) {
       React.createElement(
         'div',
         { key: 'check', className: 'text-sm', style: { color: 'var(--muted)' } },
-        'Mentalidade de hoje',
+        'Identidade de hoje',
         React.createElement(
           'div',
-          { className: 'mt-1', style: { color: 'var(--text)', fontSize: 15 } },
-          todayCheckin.identity || ''
+          { className: 'mt-1', style: { color: 'var(--text)', fontSize: 15, fontWeight: 600 } },
+          todayCheckin.identity || 'Check-in feito hoje'
+        ),
+        todayCheckin.reframe &&
+          React.createElement(
+            'div',
+            { className: 'text-xs mt-2', style: { color: 'var(--muted)' } },
+            'Ação de hoje: ',
+            React.createElement('span', { style: { color: 'var(--text)' } }, todayCheckin.reframe)
+          ),
+        React.createElement(
+          'div',
+          { className: 'text-xs mt-2', style: { color: 'var(--muted2)' } },
+          'A identidade e a ação que você definiu no check-in da aba Mental.'
         )
       )
     );
