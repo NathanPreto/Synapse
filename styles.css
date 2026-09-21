@@ -752,3 +752,64 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .ai-message-list{margin:0 0 8px;padding-left:20px}
 .ai-message-list:last-child{margin-bottom:0}
 .ai-message-list li{margin:4px 0}
+
+/* ---- WhatsApp ---- */
+.whatsapp-btn{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 11px;border:1px solid rgba(31,157,85,.55);border-radius:10px;background:rgba(31,157,85,.16);color:#25a55f;font-size:12px;font-weight:700;text-decoration:none}
+.whatsapp-btn:hover{background:rgba(31,157,85,.28)}
+.whatsapp-btn.is-compact{width:34px;padding:0;justify-content:center}
+.whatsapp-btn.is-disabled{border-color:var(--border);background:var(--surface2);color:var(--muted);font-weight:500;cursor:not-allowed}
+
+/* ---- Consent / LGPD ---- */
+.consent-card{max-width:560px;margin:0 auto;padding:26px;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text)}
+.consent-list{display:grid;gap:12px;margin:16px 0}
+.consent-row{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;cursor:pointer}
+.consent-row input{width:18px;height:18px;margin-top:2px;accent-color:var(--blue);flex:none}
+.consent-note{font-size:12px;color:var(--muted);line-height:1.5}
+.consent-submit{min-height:40px;padding:0 18px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:700}
+.consent-submit:disabled{opacity:.45;cursor:not-allowed}
+.consent-terms a{color:var(--blue);text-decoration:underline}
+.mental-consent-card{padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.wellbeing-disclaimer{margin:10px 0;padding:10px 12px;border-radius:10px;background:var(--surface2);color:var(--muted);font-size:12px;line-height:1.5}
+
+/* ---- Vault ---- */
+.vault-warning{padding:10px 12px;border-radius:10px;background:#fff6e0;border:1px solid #edd08a;color:#7a5a00;font-size:12px;line-height:1.5}
+.vault-danger{padding:10px 12px;border-radius:10px;background:#fdecec;border:1px solid #f0b4b4;color:#9b2226;font-size:12px;line-height:1.5}
+
+/* ---- Settings ---- */
+.settings-modal{width:min(560px,96vw);max-height:90dvh;overflow:auto}
+.settings-section{display:grid;gap:4px;margin-top:18px}
+.settings-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.settings-row-title{font-size:13px;font-weight:700}
+.settings-row-text{font-size:12px;color:var(--muted);line-height:1.45}
+.settings-row-side{flex:none}
+.settings-badge{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--surface2);font-size:11px;font-weight:700}
+.settings-btn{min-height:34px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:12px;font-weight:700}
+.settings-btn:hover{background:var(--surface2)}
+.settings-danger{border-color:#e39a9a;color:#9b2226}
+.settings-link{color:var(--blue);text-decoration:underline;font-size:12px}
+.settings-field{display:grid;gap:6px;margin:10px 0}
+.settings-field input{min-height:38px;padding:0 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+.settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.settings-legal{display:flex;gap:14px;margin-top:16px;font-size:12px}
+.vault-remember{display:flex;gap:8px;align-items:center;font-size:12px}
+
+/* ---- Syn safety ---- */
+.ai-consent{margin:auto;max-width:440px;padding:22px;text-align:left;font-size:13px;line-height:1.5}
+.ai-consent-button{margin-top:12px;min-height:38px;padding:0 16px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:700}
+.ai-suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ai-suggestion{padding:7px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);font-size:12px}
+.ai-suggestion:hover{background:var(--surface2)}
+.ai-disclaimer{padding:6px 14px;color:var(--muted);font-size:11px;text-align:center}
+.ai-crisis-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ai-crisis-call{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:10px;background:#9b2226;color:#fff;font-size:13px;font-weight:700;text-decoration:none}
+.ai-message-bubble.is-safety{border:1px solid #e39a9a;background:#fff5f5}
+.whatsapp-btn svg{flex:none}
+.whatsapp-btn.is-disabled{padding:6px 11px;min-height:32px;white-space:normal;line-height:1.3}
+.settings-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.settings-title{margin:6px 0 0;font-family:Newsreader,serif;font-size:26px;font-weight:500;letter-spacing:-.03em}
+.settings-label{color:var(--muted2);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.settings-value{font-size:13px;word-break:break-word}
+.modal-close{width:34px;min-height:34px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+.settings-danger-zone{margin-top:18px;padding-top:16px;border-top:1px solid #9b2226}
+.settings-modal p{font-size:13px;line-height:1.5}
+.wellbeing-disclaimer{grid-column:1/-1;width:100%;box-sizing:border-box}

@@ -1,0 +1,16 @@
+# Configuração do Supabase CLI (deploy reproduzível das Edge Functions e migrações).
+#   supabase link --project-ref <seu-project-ref>
+#   supabase db push
+#   supabase functions deploy synapse-ai
+#   supabase functions deploy delete-account
+#   supabase secrets set GEMINI_API_KEY=... ALLOWED_ORIGINS=https://seu-app.vercel.app
+project_id = "synapse"
+
+[functions.synapse-ai]
+enabled = true
+# O gateway valida o JWT; a função valida de novo com auth.getUser().
+verify_jwt = true
+
+[functions.delete-account]
+enabled = true
+verify_jwt = true
