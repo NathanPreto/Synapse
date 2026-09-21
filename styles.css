@@ -754,7 +754,7 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .ai-message-list li{margin:4px 0}
 
 /* ---- WhatsApp ---- */
-.whatsapp-btn{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 11px;border:1px solid rgba(31,157,85,.55);border-radius:10px;background:rgba(31,157,85,.16);color:#25a55f;font-size:12px;font-weight:700;text-decoration:none}
+.whatsapp-btn{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 11px;border:1px solid rgba(31,157,85,.55);border-radius:10px;background:rgba(31,157,85,.16);color:#1a8f4c;font-size:12px;font-weight:700;text-decoration:none}
 .whatsapp-btn:hover{background:rgba(31,157,85,.28)}
 .whatsapp-btn.is-compact{width:34px;padding:0;justify-content:center}
 .whatsapp-btn.is-disabled{border-color:var(--border);background:var(--surface2);color:var(--muted);font-weight:500;cursor:not-allowed}
@@ -813,3 +813,27 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .settings-danger-zone{margin-top:18px;padding-top:16px;border-top:1px solid #9b2226}
 .settings-modal p{font-size:13px;line-height:1.5}
 .wellbeing-disclaimer{grid-column:1/-1;width:100%;box-sizing:border-box}
+
+/* ---- Telas de consentimento/cofre: .auth-screen é sempre claro, então usam cores fixas ---- */
+.auth-screen .consent-card{background:#fff;color:#171918;border:1px solid #d9dbd7;box-shadow:0 24px 70px rgba(22,24,22,.09)}
+.auth-screen .consent-card a{color:#2447c9;text-decoration:underline}
+.auth-screen .consent-list{display:grid;gap:10px;margin:18px 0}
+.auth-screen .consent-row{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid #d9dbd7;border-radius:12px;background:#f7f8f6;color:#171918;font-size:13px;line-height:1.5;cursor:pointer}
+.auth-screen .consent-row:hover{border-color:#8a918c}
+.auth-screen .consent-row:has(input:checked){border-color:#2447c9;background:#eef2ff}
+.auth-screen .consent-row input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:20px;height:20px;margin:1px 0 0;border:2px solid #5f6661;border-radius:6px;background:#fff;display:grid;place-content:center;cursor:pointer}
+.auth-screen .consent-row input[type=checkbox]::after{content:"";width:10px;height:6px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(-45deg) translate(1px,-1px);opacity:0}
+.auth-screen .consent-row input[type=checkbox]:checked{background:#2447c9;border-color:#2447c9}
+.auth-screen .consent-row input[type=checkbox]:checked::after{opacity:1}
+.auth-screen .consent-row input[type=checkbox]:focus-visible{outline:3px solid rgba(36,71,201,.35);outline-offset:2px}
+.auth-screen .consent-row input[type=checkbox]:disabled{opacity:.5;cursor:not-allowed}
+.auth-screen .consent-note,.auth-screen .consent-card .auth-copy{color:#4d5450}
+.auth-screen .consent-submit{background:#171918;color:#fff}
+.auth-screen .consent-submit:disabled{background:#9aa09b;color:#fff;opacity:1}
+.auth-screen .vault-warning{background:#fff6e0;border-color:#e0bd66;color:#6b4d00}
+.auth-screen .vault-danger{background:#fdecec;border-color:#e39a9a;color:#8a1c20}
+.auth-screen .settings-field input,.auth-screen .consent-card input[type=password],.auth-screen .consent-card input[type=text]{background:#fff;color:#171918;border:1px solid #b8bdb9}
+.auth-screen .consent-card label{color:#171918}
+.auth-screen .consent-card button:not(.consent-submit):not(.auth-submit){color:#171918}
+.auth-screen .consent-row input[type=checkbox]{width:20px;min-width:20px;max-width:20px;height:20px;padding:0;box-sizing:border-box}
+.auth-screen .consent-note{margin:4px 0 16px}
