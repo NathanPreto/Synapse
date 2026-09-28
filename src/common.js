@@ -9,6 +9,7 @@ const {
   deleteAccount: backendDeleteAccount,
   loadProspecting: backendLoadProspecting,
   createProspectingRun: backendCreateProspectingRun,
+  searchProspecting: backendSearchProspecting,
   deleteWellbeingData: backendDeleteWellbeing
 } = window.SynapseBackend || {};
 const persistence = window.SynapsePersistence || {};
