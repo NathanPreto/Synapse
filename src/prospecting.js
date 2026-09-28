@@ -68,7 +68,8 @@ function Prospecting({ userId }) {
           region: region.trim() || 'Brasil',
           segments,
           keywords: keywords.split(',').map(v => v.trim()).filter(Boolean).slice(0, 20),
-          limit: Math.max(1, Math.min(20, Number(limit) || 10))
+          limit: Math.max(1, Math.min(20, Number(limit) || 10)),
+          runId: run.id
         });
         setProspects(prev => [...(result?.prospects || []), ...prev]);
         setNotice(`${result?.prospects?.length || 0} empresas encontradas e salvas para análise.`);
@@ -207,6 +208,32 @@ function Prospecting({ userId }) {
                       React.createElement('span', { className: 'prospect-potential ' + p.potential }, p.potential === 'unknown' ? 'Ainda não analisado' : p.potential)
                     ),
                     p.potentialReason && React.createElement('p', null, p.potentialReason),
+                    p.contacts?.length && React.createElement(
+                      'div',
+                      { className: 'prospect-contact-preview' },
+                      p.contacts.filter(c => c.email).slice(0, 2).map(c =>
+                        React.createElement('div', { key: c.id || c.email },
+                          React.createElement('b', null, c.name || c.jobTitle || 'Contato comercial'),
+                          React.createElement('span', null, c.email)
+                        )
+                      )
+                    ),
+                    p.analysis?.suggested_subject && React.createElement(
+                      'details',
+                      { className: 'prospect-message' },
+                      React.createElement('summary', null, 'Mensagem sugerida'),
+                      React.createElement('div', null,
+                        React.createElement('b', null, p.analysis.suggested_subject),
+                        React.createElement('p', null, p.analysis.suggested_body)
+                      )
+                    ),
+                    p.sources?.length && React.createElement(
+                      'div',
+                      { className: 'prospect-sources' },
+                      p.sources.slice(0, 3).map(s =>
+                        React.createElement('a', { key: s.id || s.url, href: s.url, target: '_blank', rel: 'noopener noreferrer' }, s.name || 'Fonte')
+                      )
+                    ),
                     React.createElement(
                       'div',
                       { className: 'prospect-actions' },
