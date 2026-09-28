@@ -100,7 +100,8 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
       body: JSON.stringify({
         model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.5-flash-lite',
         input: prompt,
-        tools: [{ type: 'google_search' }]
+        tools: [{ type: 'google_search' }],
+        response_format: { type: 'text', mime_type: 'application/json' }
       })
     });
 
@@ -111,12 +112,23 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
     }
 
     const payload = await response.json();
-    const outputs = Array.isArray(payload?.steps) ? payload.steps.filter((s: any) => s?.type === 'model_output') : [];
+    if (payload?.status && payload.status !== 'completed') {
+      console.error('Gemini prospecting incomplete', payload.status, payload?.error || '');
+      return json({ code: 'SEARCH_INCOMPLETE', provider_status: clean(payload.status, 50) }, 502);
+    }
+
+    const outputs = Array.isArray(payload?.steps)
+      ? payload.steps.filter((s: any) => s?.type === 'model_output')
+      : [];
     const blocks = outputs.flatMap((s: any) => Array.isArray(s.content) ? s.content : []);
     const textBlock = blocks.find((b: any) => b?.type === 'text' && typeof b.text === 'string');
-    if (!textBlock?.text) return json({ code: 'EMPTY_SEARCH_RESULT' }, 502);
+    const outputText = textBlock?.text || (typeof payload?.output_text === 'string' ? payload.output_text : '');
+    if (!outputText) {
+      console.error('Gemini prospecting returned no model output', JSON.stringify(payload).slice(0, 3000));
+      return json({ code: 'EMPTY_SEARCH_RESULT' }, 502);
+    }
 
-    const parsed = parseModelJson(textBlock.text);
+    const parsed = parseModelJson(outputText);
     const sourceAnnotations = blocks.flatMap((b: any) => Array.isArray(b.annotations) ? b.annotations : [])
       .filter((a: any) => a?.type === 'url_citation' && a.url)
       .map((a: any) => ({ url: clean(a.url, 1000), source_name: clean(a.title || a.url, 200) }));
@@ -146,6 +158,6 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
     return json({ prospects, sources: annotationSources });
   } catch (error) {
     console.error('Prospecting function error', error);
-    return json({ code: 'FUNCTION_ERROR' }, 500);
+    return json({ code: 'FUNCTION_ERROR', detail: clean(error instanceof Error ? error.message : error, 500) }, 500);
   }
 });
