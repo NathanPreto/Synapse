@@ -201,6 +201,7 @@
       if (code === 'RATE_LIMITED') throw new Error('A busca atingiu o limite de uso. Aguarde alguns instantes e tente novamente.');
       if (code === 'CONFIG_MISSING') throw new Error('A busca de prospecção ainda não está configurada no servidor.');
       if (code === 'SEARCH_PROVIDER_ERROR') throw new Error('O provedor de pesquisa não respondeu. Tente novamente em alguns instantes.');
+      if (code === 'SEARCH_QUOTA_EXCEEDED') throw new Error('A pesquisa atingiu a cota do provedor. O Synapse mudou para uma rota de pesquisa mais econômica; tente novamente em alguns instantes.');
       if (code === 'SEARCH_INCOMPLETE') throw new Error('A pesquisa externa não terminou a tempo. Tente novamente.');
       if (code === 'EMPTY_SEARCH_RESULT') throw new Error('A pesquisa externa não retornou resultados utilizáveis.');
       if (code === 'DATABASE_ERROR') throw new Error('A busca encontrou um problema ao acessar os dados da prospecção.');
