@@ -166,6 +166,7 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
     if (!response.ok) {
       const detail = await response.text();
       console.error('Gemini prospecting error', response.status, detail.slice(0, 1000));
+      if (response.status === 429) return json({ code: 'SEARCH_QUOTA_EXCEEDED' }, 429, req);
       return json({ code: 'SEARCH_PROVIDER_ERROR' }, 502, req);
     }
 
