@@ -897,3 +897,15 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .prospect-message>div{padding:0 10px 10px}.prospect-message b{display:block;font-size:11px;margin-bottom:5px}.prospect-message p{margin:0!important;white-space:pre-wrap;font-size:11px;line-height:1.5}
 .prospect-sources{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.prospect-sources a{font-size:10px;color:var(--muted);text-decoration:none;padding:5px 7px;border:1px solid var(--border);border-radius:7px;background:var(--surface)}
 .prospect-sources a:hover{transform:none;box-shadow:none;color:var(--text)}
+
+/* Prospecção — leitura e campos */
+.prospecting-card input,.prospecting-card textarea,.prospecting-card select{box-sizing:border-box;width:100%;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font:inherit;font-size:13px;line-height:1.4;box-shadow:none}
+.prospecting-card select{appearance:auto;-webkit-appearance:auto;cursor:pointer}
+.prospecting-card input[type=number]{font-variant-numeric:tabular-nums;text-align:left}
+.prospecting-card input:focus,.prospecting-card textarea:focus,.prospecting-card select:focus{outline:2px solid color-mix(in srgb,var(--teal) 38%,transparent);outline-offset:1px}
+.prospecting-card textarea{resize:vertical;min-height:84px}
+.prospect-contact-preview div{align-items:flex-start;min-width:0}
+.prospect-contact-preview b,.prospect-contact-preview span{min-width:0;overflow-wrap:anywhere}
+.prospect-contact-preview span{text-align:left}
+.prospecting-history-row b{min-width:0;overflow-wrap:anywhere}
+@media(max-width:560px){.prospect-contact-preview div{display:grid;gap:3px}}
