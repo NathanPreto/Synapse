@@ -14,3 +14,7 @@ verify_jwt = true
 [functions.delete-account]
 enabled = true
 verify_jwt = true
+
+[functions.prospecting-search]
+enabled = true
+verify_jwt = true
