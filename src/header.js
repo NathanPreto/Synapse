@@ -143,6 +143,7 @@ function TopBar({
     { key: 'painel', label: 'Painel', IconC: LayoutDashboard },
     { key: 'mental', label: 'Mental', IconC: Sparkles },
     { key: 'clientes', label: 'Clientes', IconC: Users },
+    { key: 'prospeccao', label: 'Prospecção', IconC: Search },
     { key: 'lembretes', label: 'Lembretes', IconC: Bell },
     { key: 'foco', label: 'Foco do Dia', IconC: ListChecks }
   ];
