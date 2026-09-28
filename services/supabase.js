@@ -140,6 +140,61 @@
     return data;
   }
 
+  async function loadProspecting(userId) {
+    const api = requireClient();
+    return withFeedback('Carregando prospecção', async () => {
+      const [runs, prospects, contacts, sources] = await Promise.all([
+        api.from('prospecting_runs').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        api.from('prospects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        api.from('prospect_contacts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        api.from('prospect_sources').select('*').eq('user_id', userId).order('captured_at', { ascending: false })
+      ]);
+      for (const result of [runs, prospects, contacts, sources]) if (result.error) throw result.error;
+      return {
+        runs: (runs.data || []).map(r => ({
+          id: r.id, name: clean(r.name), product: clean(r.product), region: clean(r.region),
+          segments: Array.isArray(r.segments) ? r.segments : [], keywords: Array.isArray(r.keywords) ? r.keywords : [],
+          requestedLimit: r.requested_limit, status: r.status, createdAt: r.created_at
+        })),
+        prospects: (prospects.data || []).map(r => ({
+          id: r.id, runId: r.run_id, companyName: clean(r.company_name), tradeName: clean(r.trade_name),
+          domain: clean(r.domain), website: clean(r.website), industry: clean(r.industry),
+          description: clean(r.description), city: clean(r.city), state: clean(r.state), country: clean(r.country),
+          potential: r.potential, potentialReason: clean(r.potential_reason), analysisStatus: r.analysis_status,
+          analysis: r.analysis || {}, evidence: r.evidence || [], unknowns: r.unknowns || [], status: r.status,
+          convertedClientId: r.converted_client_id, createdAt: r.created_at,
+          contacts: (contacts.data || []).filter(x => x.prospect_id === r.id).map(x => ({
+            id: x.id, name: clean(x.name), email: clean(x.email), phone: clean(x.phone),
+            jobTitle: clean(x.job_title), department: clean(x.department), emailStatus: x.email_status,
+            emailConfidence: x.email_confidence, source: clean(x.source), sourceUrl: clean(x.source_url), isPrimary: !!x.is_primary
+          })),
+          sources: (sources.data || []).filter(x => x.prospect_id === r.id).map(x => ({
+            id: x.id, type: x.source_type, name: clean(x.source_name), url: clean(x.source_url), evidence: clean(x.evidence), capturedAt: x.captured_at
+          }))
+        }))
+      };
+    });
+  }
+
+  async function createProspectingRun(userId, input) {
+    const api = requireClient();
+    const segments = Array.isArray(input?.segments) ? input.segments.filter(s => ["Plásticos","Alimentos","Química","Papel e celulose","Tratamento de água"].includes(s)) : [];
+    const keywords = Array.isArray(input?.keywords) ? input.keywords.map(v => clean(v)).filter(Boolean).slice(0, 20) : [];
+    const payload = {
+      user_id: userId,
+      name: clean(input?.name).slice(0, 200) || 'Nova prospecção',
+      product: clean(input?.product).slice(0, 200) || 'Soprador radial',
+      region: clean(input?.region).slice(0, 200),
+      segments,
+      keywords,
+      requested_limit: Math.max(1, Math.min(100, Number(input?.requestedLimit) || 20)),
+      status: 'draft'
+    };
+    const { data, error } = await api.from('prospecting_runs').insert(payload).select('*').single();
+    if (error) throw error;
+    return { id: data.id, name: clean(data.name), product: clean(data.product), region: clean(data.region), segments: data.segments || [], keywords: data.keywords || [], requestedLimit: data.requested_limit, status: data.status, createdAt: data.created_at };
+  }
+
   const AI_ERRORS = {
     CONFIG_MISSING: 'A Syn ainda não está configurada no servidor.',
     FORBIDDEN_ORIGIN: 'A Syn não está liberada para este endereço do aplicativo.',
@@ -254,6 +309,8 @@
     saveProfile,
     deleteWellbeingData,
     askAI,
-    deleteAccount
+    deleteAccount,
+    loadProspecting,
+    createProspectingRun
   };
 })();
