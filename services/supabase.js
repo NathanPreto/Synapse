@@ -176,6 +176,46 @@
     });
   }
 
+  async function searchProspecting(userId, input) {
+    const api = requireClient();
+    const { data: sessionData } = await api.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) throw new Error('Sessão expirada. Entre novamente.');
+    const { data, error } = await api.functions.invoke('prospecting-search', {
+      body: {
+        product: clean(input?.product).slice(0, 200) || 'Soprador radial',
+        region: clean(input?.region).slice(0, 200) || 'Brasil',
+        segments: Array.isArray(input?.segments) ? input.segments : [],
+        keywords: Array.isArray(input?.keywords) ? input.keywords : [],
+        limit: Math.max(1, Math.min(20, Number(input?.limit) || 10))
+      },
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (error) throw error;
+    const prospects = Array.isArray(data?.prospects) ? data.prospects : [];
+    if (!prospects.length) return { prospects: [] };
+    const inserted = await api.from('prospects').insert(prospects.map(p => ({
+      user_id: userId,
+      company_name: p.company_name,
+      domain: p.domain,
+      website: p.website,
+      industry: p.industry,
+      description: p.description,
+      city: p.city,
+      state: p.state,
+      country: p.country || 'Brasil',
+      potential: p.potential,
+      potential_reason: p.potential_reason,
+      analysis_status: p.analysis_status,
+      analysis: p.analysis,
+      evidence: p.evidence,
+      unknowns: p.unknowns,
+      status: 'new'
+    }))).select('*');
+    if (inserted.error) throw inserted.error;
+    return { prospects: inserted.data || [] };
+  }
+
   async function createProspectingRun(userId, input) {
     const api = requireClient();
     const segments = Array.isArray(input?.segments) ? input.segments.filter(s => ["Plásticos","Alimentos","Química","Papel e celulose","Tratamento de água"].includes(s)) : [];
@@ -311,6 +351,7 @@
     askAI,
     deleteAccount,
     loadProspecting,
-    createProspectingRun
+    createProspectingRun,
+    searchProspecting
   };
 })();
