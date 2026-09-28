@@ -47,7 +47,7 @@ Deno.serve(async req => {
     const product = clean(body?.product || 'Soprador radial', 200);
     const region = clean(body?.region || 'Brasil', 200);
     const segments = Array.isArray(body?.segments)
-      ? body.segments.map((v: unknown) => clean(v, 80)).filter((v: string) => ['Plásticos','Alimentos','Química','Papel e celulose','Tratamento de água'].includes(v)).slice(0, 5))
+      ? body.segments.map((v: unknown) => clean(v, 80)).filter((v: string) => ['Plásticos','Alimentos','Química','Papel e celulose','Tratamento de água'].includes(v)).slice(0, 5)
       : [];
     const keywords = Array.isArray(body?.keywords)
       ? body.keywords.map((v: unknown) => clean(v, 100)).filter(Boolean).slice(0, 12)
