@@ -14,6 +14,7 @@ function Prospecting({ userId }) {
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [notice, setNotice] = React.useState('');
   const [product, setProduct] = React.useState('Soprador radial');
   const [region, setRegion] = React.useState('');
   const [segments, setSegments] = React.useState(['Plásticos', 'Alimentos', 'Química', 'Papel e celulose', 'Tratamento de água']);
@@ -24,6 +25,7 @@ function Prospecting({ userId }) {
     if (!userId || typeof backendLoadProspecting !== 'function') return;
     setLoading(true);
     setError('');
+    setNotice('');
     try {
       const data = await backendLoadProspecting(userId);
       setRuns(data?.runs || []);
@@ -58,7 +60,7 @@ function Prospecting({ userId }) {
         requestedLimit: Math.max(1, Math.min(100, Number(limit) || 20))
       });
       setRuns(prev => [run, ...prev]);
-      alert('Pesquisa criada. A busca externa de empresas será conectada na próxima etapa.');
+      setNotice('Pesquisa salva. A descoberta de empresas será executada na próxima etapa.');
     } catch (e) {
       window.SynapseLogger?.warn('Falha ao criar pesquisa de prospecção.', e);
       setError('Não foi possível salvar esta pesquisa. Verifique sua conexão e tente novamente.');
@@ -91,7 +93,8 @@ function Prospecting({ userId }) {
         React.createElement('span', null, 'O Synapse não envia e-mails. Ele prepara os dados e a mensagem para você revisar.')
       )
     ),
-    error && React.createElement('div', { className: 'sync-banner error' }, error),
+    error && React.createElement('div', { className: 'prospecting-feedback error', role: 'alert' }, error),
+    notice && React.createElement('div', { className: 'prospecting-feedback success', role: 'status' }, notice),
     React.createElement(
       'div',
       { className: 'prospecting-grid' },
@@ -148,7 +151,7 @@ function Prospecting({ userId }) {
         React.createElement(
           'button',
           { className: 'prospecting-primary', disabled: busy, onClick: createSearch },
-          busy ? 'Salvando pesquisa…' : '🔎 Criar pesquisa'
+          busy ? 'Salvando pesquisa…' : React.createElement(Search, { size: 16 }), busy ? null : ' Criar pesquisa'
         )
       ),
       React.createElement(
