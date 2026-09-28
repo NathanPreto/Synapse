@@ -28,6 +28,7 @@ const ICONS = {
     '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
   Flame:
     '<path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/>',
+  Search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>' ,
   Users:
     '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
   Bell: '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',
@@ -73,6 +74,7 @@ function Icon({ path, size = 16, strokeWidth = 2, style, className }) {
 }
 const LayoutDashboard = p => React.createElement(Icon, { path: ICONS.LayoutDashboard, ...p });
 const Flame = p => React.createElement(Icon, { path: ICONS.Flame, ...p });
+const Search = p => React.createElement(Icon, { path: ICONS.Search, ...p });
 const Users = p => React.createElement(Icon, { path: ICONS.Users, ...p });
 const Bell = p => React.createElement(Icon, { path: ICONS.Bell, ...p });
 const Plus = p => React.createElement(Icon, { path: ICONS.Plus, ...p });
