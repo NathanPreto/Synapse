@@ -181,6 +181,7 @@
     const { data: sessionData } = await api.auth.getSession();
     const token = sessionData?.session?.access_token;
     if (!token) throw new Error('Sessão expirada. Entre novamente.');
+    const runId = input?.runId || null;
     const { data, error } = await api.functions.invoke('prospecting-search', {
       body: {
         product: clean(input?.product).slice(0, 200) || 'Soprador radial',
@@ -194,8 +195,10 @@
     if (error) throw error;
     const prospects = Array.isArray(data?.prospects) ? data.prospects : [];
     if (!prospects.length) return { prospects: [] };
-    const inserted = await api.from('prospects').insert(prospects.map(p => ({
+
+    const rows = prospects.map(p => ({
       user_id: userId,
+      run_id: runId,
       company_name: p.company_name,
       domain: p.domain,
       website: p.website,
@@ -207,14 +210,51 @@
       potential: p.potential,
       potential_reason: p.potential_reason,
       analysis_status: p.analysis_status,
-      analysis: p.analysis,
-      evidence: p.evidence,
-      unknowns: p.unknowns,
+      analysis: { ...(p.analysis || {}), suggested_subject: p.suggested_subject || '', suggested_body: p.suggested_body || '' },
+      evidence: p.evidence || [],
+      unknowns: p.unknowns || [],
       status: 'new'
-    }))).select('*');
+    }));
+    const inserted = await api.from('prospects').insert(rows).select('*');
     if (inserted.error) throw inserted.error;
+
+    const byName = new Map((inserted.data || []).map(row => [row.company_name, row]));
+    const contactRows = [];
+    const sourceRows = [];
+    for (const p of prospects) {
+      const row = byName.get(p.company_name);
+      if (!row) continue;
+      for (const contact of Array.isArray(p.contacts) ? p.contacts : []) {
+        if (!contact.email && !contact.phone && !contact.name) continue;
+        contactRows.push({
+          prospect_id: row.id, user_id: userId, name: contact.name || '', email: contact.email || '',
+          phone: contact.phone || '', job_title: contact.job_title || '', department: contact.department || '',
+          email_status: contact.email_status || 'unknown', email_confidence: contact.email_confidence || 'unknown',
+          source: contact.source || '', source_url: contact.source_url || '', is_primary: !!contact.is_primary
+        });
+      }
+      for (const source of Array.isArray(p.evidence) ? p.evidence : []) {
+        if (!source.url) continue;
+        sourceRows.push({
+          prospect_id: row.id, user_id: userId, source_type: 'web', source_name: source.source_name || 'Google Search',
+          source_url: source.url, evidence: source.evidence || ''
+        });
+      }
+    }
+    if (contactRows.length) {
+      const contacts = await api.from('prospect_contacts').insert(contactRows);
+      if (contacts.error) throw contacts.error;
+    }
+    if (sourceRows.length) {
+      const sources = await api.from('prospect_sources').insert(sourceRows);
+      if (sources.error) throw sources.error;
+    }
+    if (runId) {
+      await api.from('prospecting_runs').update({ status: 'completed' }).eq('id', runId).eq('user_id', userId);
+    }
     return { prospects: inserted.data || [] };
   }
+
 
   async function createProspectingRun(userId, input) {
     const api = requireClient();
