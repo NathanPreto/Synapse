@@ -17,6 +17,7 @@
     askAI: provider?.askAI,
     deleteAccount: provider?.deleteAccount,
     loadProspecting: provider?.loadProspecting,
-    createProspectingRun: provider?.createProspectingRun
+    createProspectingRun: provider?.createProspectingRun,
+    searchProspecting: provider?.searchProspecting
   };
 })();
