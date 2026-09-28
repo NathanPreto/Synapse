@@ -1,18 +1,10 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '')
-  .split(',')
-  .map(value => value.trim())
-  .filter(Boolean);
-
 function corsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '';
-  const allowOrigin = !ALLOWED_ORIGINS.length
-    ? '*'
-    : (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  const origin = req.headers.get('Origin') || '*';
   return {
-    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Vary': 'Origin'
