@@ -8,6 +8,8 @@ const PROSPECT_SEGMENTS = [
   'Tratamento de água'
 ];
 
+const PROSPECT_STATES = [['AC','Acre'],['AL','Alagoas'],['AP','Amapá'],['AM','Amazonas'],['BA','Bahia'],['CE','Ceará'],['DF','Distrito Federal'],['ES','Espírito Santo'],['GO','Goiás'],['MA','Maranhão'],['MT','Mato Grosso'],['MS','Mato Grosso do Sul'],['MG','Minas Gerais'],['PA','Pará'],['PB','Paraíba'],['PR','Paraná'],['PE','Pernambuco'],['PI','Piauí'],['RJ','Rio de Janeiro'],['RN','Rio Grande do Norte'],['RS','Rio Grande do Sul'],['RO','Rondônia'],['RR','Roraima'],['SC','Santa Catarina'],['SP','São Paulo'],['SE','Sergipe'],['TO','Tocantins']];
+
 function Prospecting({ userId }) {
   const [runs, setRuns] = React.useState([]);
   const [prospects, setProspects] = React.useState([]);
@@ -42,10 +44,6 @@ function Prospecting({ userId }) {
   React.useEffect(() => {
     load();
   }, [load]);
-
-  function toggleSegment(segment) {
-    setSegments(prev => prev.includes(segment) ? prev.filter(v => v !== segment) : [...prev, segment]);
-  }
 
   async function createSearch() {
     if (busy || typeof backendCreateProspectingRun !== 'function') return;
@@ -130,29 +128,13 @@ function Prospecting({ userId }) {
           'label',
           null,
           'Região',
-          React.createElement('input', { value: region, onChange: e => setRegion(e.target.value), placeholder: 'Ex.: São Paulo, SP ou Brasil' })
+          React.createElement('select', { value: region, onChange: e => setRegion(e.target.value), className: 'prospecting-select' }, React.createElement('option', { value: '' }, 'Brasil inteiro'), ...PROSPECT_STATES.map(([uf, name]) => React.createElement('option', { key: uf, value: name + ', ' + uf }, name + ' (' + uf + ')')))
         ),
         React.createElement(
           'div',
           { className: 'prospecting-field' },
           React.createElement('span', { className: 'prospecting-label' }, 'Segmentos'),
-          React.createElement(
-            'div',
-            { className: 'prospecting-chips' },
-            PROSPECT_SEGMENTS.map(segment =>
-              React.createElement(
-                'button',
-                {
-                  key: segment,
-                  type: 'button',
-                  className: 'prospecting-chip' + (segments.includes(segment) ? ' active' : ''),
-                  onClick: () => toggleSegment(segment),
-                  'aria-pressed': segments.includes(segment)
-                },
-                segment
-              )
-            )
-          )
+          React.createElement('select', { className: 'prospecting-select prospecting-segment-select', value: segments[0] || '', onChange: e => setSegments(e.target.value ? [e.target.value] : []) }, React.createElement('option', { value: '' }, 'Todos os segmentos'), ...PROSPECT_SEGMENTS.map(segment => React.createElement('option', { key: segment, value: segment }, segment))))
         ),
         React.createElement(
           'label',
