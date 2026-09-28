@@ -62,7 +62,8 @@ Deno.serve(async req => {
 
     const serviceKey = Deno.env.get(['SUPABASE', 'SERVICE', 'ROLE', 'KEY'].join('_'));
     const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!serviceKey || !geminiKey) return json({ code: 'CONFIG_MISSING' }, 500, req);
+    const exaKey = Deno.env.get('EXA_API_KEY');
+    if (!serviceKey || !geminiKey || !exaKey) return json({ code: 'CONFIG_MISSING' }, 500, req);
 
     const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey, { auth: noSession });
     const quota = await admin.rpc('consume_ai_quota', {
@@ -80,13 +81,46 @@ Deno.serve(async req => {
     const existingDomains = new Set((existing.data || []).map((p: any) => clean(p.domain, 500).toLowerCase()).filter(Boolean));
     const existingNames = new Set((existing.data || []).map((p: any) => clean(p.company_name, 200).toLowerCase()).filter(Boolean));
 
+    const searchQuery = [
+      product,
+      'empresas industriais',
+      region,
+      segments.join(' '),
+      keywords.join(' ')
+    ].filter(Boolean).join(' ');
+    const exaResponse = await fetch('https://api.exa.ai/search', {
+      method: 'POST',
+      headers: { 'x-api-key': exaKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: searchQuery,
+        type: 'fast',
+        numResults: Math.min(20, Math.max(10, limit)),
+        contents: { text: true }
+      })
+    });
+    if (!exaResponse.ok) {
+      const detail = await exaResponse.text();
+      console.error('Exa prospecting error', exaResponse.status, detail.slice(0, 1000));
+      if (exaResponse.status === 429) return json({ code: 'SEARCH_QUOTA_EXCEEDED', provider: 'exa' }, 429, req);
+      return json({ code: 'SEARCH_PROVIDER_ERROR', provider: 'exa' }, 502, req);
+    }
+    const exaPayload = await exaResponse.json();
+    const searchResults = Array.isArray(exaPayload?.results) ? exaPayload.results : [];
+    if (!searchResults.length) return json({ code: 'EMPTY_SEARCH_RESULT', provider: 'exa' }, 502, req);
+    const searchContext = searchResults.slice(0, 12).map((r: any, i: number) => [
+      'RESULTADO ' + (i + 1),
+      'Título: ' + clean(r?.title, 300),
+      'URL: ' + clean(r?.url, 1000),
+      'Texto: ' + clean(r?.text, 3500)
+    ].join('\n')).join('\n\n');
+
     const prompt = `Você é o pesquisador comercial do Synapse. Encontre até ${limit} empresas INDUSTRIAIS reais no Brasil que tenham potencial de utilizar "${product}".
 
 Região: ${region}.
 Segmentos prioritários: ${segments.join(', ') || 'qualquer um dos segmentos: Plásticos, Alimentos, Química, Papel e celulose, Tratamento de água'}.
 Termos auxiliares: ${keywords.join(', ') || 'nenhum'}.
 
-Procure empresas, não fornecedores de sopradores. Priorize fabricantes/indústrias que tenham processos em que sopradores radiais possam ser usados. Para cada empresa, procure o site oficial e evidências públicas do processo industrial. Não invente empresas, sites, e-mails, cargos ou fatos.
+Procure empresas, não fornecedores de sopradores. Priorize fabricantes/indústrias que tenham processos em que sopradores radiais possam ser usados. Use somente as fontes recuperadas pela pesquisa externa abaixo como ponto de partida e não invente fatos. Para cada empresa, identifique o site oficial e evidências públicas presentes nessas fontes. Não invente empresas, sites, e-mails, cargos ou fatos.
 
 Retorne SOMENTE JSON neste formato:
 {"prospects":[{"company_name":"","domain":"","website":"","industry":"","description":"","city":"","state":"","potential":"high|medium|low|unknown","potential_reason":"","evidence":[{"url":"","source_name":"","evidence":""}],"contacts":[{"name":"","email":"","phone":"","job_title":"","department":"","email_status":"public|not_found","email_confidence":"high|medium|low|unknown","source":"","source_url":"","is_primary":true}],"suggested_subject":"","suggested_body":"","unknowns":[]}]}
@@ -98,7 +132,10 @@ Critérios:
 - evidence deve conter URLs públicas que sustentem a indicação.
 - unknowns registra o que não pôde ser confirmado.
 - para contatos, use somente e-mails comerciais publicamente publicados; não invente e-mails. Priorize geral/comercial/vendas ou cargos de compras/engenharia quando publicamente identificados.\n- gere suggested_subject e suggested_body em português, curtos, específicos para a empresa e baseados nas evidências; não diga que já é cliente.\n- não inclua empresas da lista de existentes abaixo.
-Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') || 'nenhuma'}.`;
+Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') || 'nenhuma'}.
+
+Fontes recuperadas pela busca externa:
+${searchContext}`;
 
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'POST',
@@ -106,7 +143,7 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
       body: JSON.stringify({
         model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-2.5-flash',
         input: prompt,
-        tools: [{ type: 'google_search' }],
+        store: false,
         response_format: {
           type: 'text',
           mime_type: 'application/json',
@@ -206,14 +243,15 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
         potential: ['high','medium','low','unknown'].includes(p.potential) ? p.potential : 'unknown',
         potential_reason: clean(p.potential_reason, 10000),
         analysis_status: 'analyzed',
-        analysis: { provider: 'gemini_google_search', model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.8-flash' },
+        analysis: { provider: 'exa_search_gemini_analysis', model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-2.5-flash' },
         contacts: Array.isArray(p.contacts) ? p.contacts.slice(0, 5).map((e: any) => ({ name: clean(e?.name, 200), email: clean(e?.email, 300), phone: clean(e?.phone, 100), job_title: clean(e?.job_title, 200), department: clean(e?.department, 120), email_status: ['public','not_found'].includes(e?.email_status) ? e.email_status : 'unknown', email_confidence: ['high','medium','low','unknown'].includes(e?.email_confidence) ? e.email_confidence : 'unknown', source: clean(e?.source, 200), source_url: clean(e?.source_url, 1000), is_primary: !!e?.is_primary })) : [], suggested_subject: clean(p.suggested_subject, 300), suggested_body: clean(p.suggested_body, 5000), evidence: Array.isArray(p.evidence) ? p.evidence.slice(0, 8).map((e: any) => ({ url: clean(e?.url, 1000), source_name: clean(e?.source_name, 200), evidence: clean(e?.evidence, 5000) })) : [],
         unknowns: Array.isArray(p.unknowns) ? p.unknowns.map((v: unknown) => clean(v, 500)).slice(0, 12) : []
       }))
       .filter((p: any) => p.company_name)
       .filter((p: any) => !existingNames.has(p.company_name.toLowerCase()) && (!p.domain || !existingDomains.has(p.domain)));
 
-    const annotationSources = sourceAnnotations.filter((s: any, i: number, arr: any[]) => arr.findIndex(x => x.url === s.url) === i);
+    const exaSources = searchResults.map((r: any) => ({ url: clean(r?.url, 1000), source_name: clean(r?.title || r?.url, 200) })).filter((s: any) => s.url);
+    const annotationSources = [...exaSources, ...sourceAnnotations].filter((s: any, i: number, arr: any[]) => arr.findIndex(x => x.url === s.url) === i);
     return json({ prospects, sources: annotationSources }, 200, req);
   } catch (error) {
     console.error('Prospecting function error', error);
