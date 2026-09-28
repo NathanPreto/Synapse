@@ -192,7 +192,20 @@
       },
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (error) throw error;
+    if (error) {
+      let code = '';
+      try {
+        const payload = await error.context?.json?.();
+        code = String(payload?.code || '').toUpperCase();
+      } catch (_) {}
+      if (code === 'RATE_LIMITED') throw new Error('A busca atingiu o limite de uso. Aguarde alguns instantes e tente novamente.');
+      if (code === 'CONFIG_MISSING') throw new Error('A busca de prospecção ainda não está configurada no servidor.');
+      if (code === 'SEARCH_PROVIDER_ERROR') throw new Error('O provedor de pesquisa não respondeu. Tente novamente em alguns instantes.');
+      if (code === 'SEARCH_INCOMPLETE') throw new Error('A pesquisa externa não terminou a tempo. Tente novamente.');
+      if (code === 'EMPTY_SEARCH_RESULT') throw new Error('A pesquisa externa não retornou resultados utilizáveis.');
+      if (code === 'DATABASE_ERROR') throw new Error('A busca encontrou um problema ao acessar os dados da prospecção.');
+      throw new Error('Não foi possível concluir a descoberta de empresas agora.');
+    }
     const prospects = Array.isArray(data?.prospects) ? data.prospects : [];
     if (!prospects.length) return { prospects: [] };
 
