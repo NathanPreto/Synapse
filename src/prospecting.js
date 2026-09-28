@@ -13,6 +13,7 @@ function Prospecting({ userId }) {
   const [prospects, setProspects] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
+  const [searching, setSearching] = React.useState(false);
   const [error, setError] = React.useState('');
   const [notice, setNotice] = React.useState('');
   const [product, setProduct] = React.useState('Soprador radial');
@@ -60,7 +61,23 @@ function Prospecting({ userId }) {
         requestedLimit: Math.max(1, Math.min(100, Number(limit) || 20))
       });
       setRuns(prev => [run, ...prev]);
-      setNotice('Pesquisa salva. A descoberta de empresas será executada na próxima etapa.');
+      setSearching(true);
+      try {
+        const result = await backendSearchProspecting(userId, {
+          product: product.trim() || 'Soprador radial',
+          region: region.trim() || 'Brasil',
+          segments,
+          keywords: keywords.split(',').map(v => v.trim()).filter(Boolean).slice(0, 20),
+          limit: Math.max(1, Math.min(20, Number(limit) || 10))
+        });
+        setProspects(prev => [...(result?.prospects || []), ...prev]);
+        setNotice(`${result?.prospects?.length || 0} empresas encontradas e salvas para análise.`);
+      } catch (searchError) {
+        window.SynapseLogger?.warn('Falha na descoberta de empresas.', searchError);
+        setError('A pesquisa foi salva, mas a descoberta de empresas não pôde ser concluída agora.');
+      } finally {
+        setSearching(false);
+      }
     } catch (e) {
       window.SynapseLogger?.warn('Falha ao criar pesquisa de prospecção.', e);
       setError('Não foi possível salvar esta pesquisa. Verifique sua conexão e tente novamente.');
@@ -150,8 +167,8 @@ function Prospecting({ userId }) {
         ),
         React.createElement(
           'button',
-          { className: 'prospecting-primary', disabled: busy, onClick: createSearch },
-          busy ? 'Salvando pesquisa…' : React.createElement(Search, { size: 16 }), busy ? null : ' Criar pesquisa'
+          { className: 'prospecting-primary', disabled: busy || searching, onClick: createSearch },
+          busy || searching ? (searching ? 'Pesquisando empresas…' : 'Salvando pesquisa…') : React.createElement(Search, { size: 16 }), busy || searching ? null : ' Criar pesquisa'
         )
       ),
       React.createElement(
