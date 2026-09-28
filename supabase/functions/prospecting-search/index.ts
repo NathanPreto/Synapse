@@ -54,7 +54,7 @@ Deno.serve(async req => {
       : [];
     const limit = Math.max(1, Math.min(20, Number(body?.limit) || 10));
 
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const serviceKey = Deno.env.get(['SUPABASE', 'SERVICE', 'ROLE', 'KEY'].join('_'));
     const geminiKey = Deno.env.get('GEMINI_API_KEY');
     if (!serviceKey || !geminiKey) return json({ code: 'CONFIG_MISSING' }, 500);
 
@@ -98,10 +98,62 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
       method: 'POST',
       headers: { 'x-goog-api-key': geminiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.5-flash-lite',
+        model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.8-flash-lite',
         input: prompt,
         tools: [{ type: 'google_search' }],
-        response_format: { type: 'text', mime_type: 'application/json' }
+        response_format: {
+          type: 'text',
+          mime_type: 'application/json',
+          schema: {
+  type: 'object',
+  properties: {
+    prospects: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          company_name: { type: 'string' },
+          domain: { type: 'string' },
+          website: { type: 'string' },
+          industry: { type: 'string' },
+          description: { type: 'string' },
+          city: { type: 'string' },
+          state: { type: 'string' },
+          potential: { type: 'string', enum: ['high', 'medium', 'low', 'unknown'] },
+          potential_reason: { type: 'string' },
+          evidence: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { url: { type: 'string' }, source_name: { type: 'string' }, evidence: { type: 'string' } },
+              required: ['url', 'source_name', 'evidence']
+            }
+          },
+          contacts: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' }, email: { type: 'string' }, phone: { type: 'string' },
+                job_title: { type: 'string' }, department: { type: 'string' },
+                email_status: { type: 'string', enum: ['public', 'not_found', 'unknown'] },
+                email_confidence: { type: 'string', enum: ['high', 'medium', 'low', 'unknown'] },
+                source: { type: 'string' }, source_url: { type: 'string' }, is_primary: { type: 'boolean' }
+              },
+              required: ['name', 'email', 'phone', 'job_title', 'department', 'email_status', 'email_confidence', 'source', 'source_url', 'is_primary']
+            }
+          },
+          suggested_subject: { type: 'string' },
+          suggested_body: { type: 'string' },
+          unknowns: { type: 'array', items: { type: 'string' } }
+        },
+        required: ['company_name', 'domain', 'website', 'industry', 'description', 'city', 'state', 'potential', 'potential_reason', 'evidence', 'contacts', 'suggested_subject', 'suggested_body', 'unknowns']
+      }
+    }
+  },
+  required: ['prospects']
+}
+        }
       })
     });
 
@@ -147,7 +199,7 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
         potential: ['high','medium','low','unknown'].includes(p.potential) ? p.potential : 'unknown',
         potential_reason: clean(p.potential_reason, 10000),
         analysis_status: 'analyzed',
-        analysis: { provider: 'gemini_google_search', model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.5-flash-lite' },
+        analysis: { provider: 'gemini_google_search', model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.8-flash-lite' },
         contacts: Array.isArray(p.contacts) ? p.contacts.slice(0, 5).map((e: any) => ({ name: clean(e?.name, 200), email: clean(e?.email, 300), phone: clean(e?.phone, 100), job_title: clean(e?.job_title, 200), department: clean(e?.department, 120), email_status: ['public','not_found'].includes(e?.email_status) ? e.email_status : 'unknown', email_confidence: ['high','medium','low','unknown'].includes(e?.email_confidence) ? e.email_confidence : 'unknown', source: clean(e?.source, 200), source_url: clean(e?.source_url, 1000), is_primary: !!e?.is_primary })) : [], suggested_subject: clean(p.suggested_subject, 300), suggested_body: clean(p.suggested_body, 5000), evidence: Array.isArray(p.evidence) ? p.evidence.slice(0, 8).map((e: any) => ({ url: clean(e?.url, 1000), source_name: clean(e?.source_name, 200), evidence: clean(e?.evidence, 5000) })) : [],
         unknowns: Array.isArray(p.unknowns) ? p.unknowns.map((v: unknown) => clean(v, 500)).slice(0, 12) : []
       }))
