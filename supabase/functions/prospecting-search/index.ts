@@ -46,16 +46,16 @@ function parseModelJson(text: string) {
 
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
-  if (req.method !== 'POST') return json({ code: 'METHOD_NOT_ALLOWED' }, 405, undefined, req);
+  if (req.method !== 'POST') return json({ code: 'METHOD_NOT_ALLOWED' }, 405, req);
 
   try {
     const auth = req.headers.get('Authorization') || '';
     const token = auth.replace(/^Bearer\s+/i, '').trim();
-    if (!token) return json({ code: 'UNAUTHORIZED' }, 401, undefined, req);
+    if (!token) return json({ code: 'UNAUTHORIZED' }, 401, req);
 
     const db = client(token);
     const { data: userData, error: userError } = await db.auth.getUser(token);
-    if (userError || !userData?.user?.id) return json({ code: 'UNAUTHORIZED' }, 401, undefined, req);
+    if (userError || !userData?.user?.id) return json({ code: 'UNAUTHORIZED' }, 401, req);
 
     const body = await req.json();
     const product = clean(body?.product || 'Soprador radial', 200);
@@ -70,7 +70,7 @@ Deno.serve(async req => {
 
     const serviceKey = Deno.env.get(['SUPABASE', 'SERVICE', 'ROLE', 'KEY'].join('_'));
     const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!serviceKey || !geminiKey) return json({ code: 'CONFIG_MISSING' }, 500, undefined, req);
+    if (!serviceKey || !geminiKey) return json({ code: 'CONFIG_MISSING' }, 500, req);
 
     const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey, { auth: noSession });
     const quota = await admin.rpc('consume_ai_quota', {
@@ -79,11 +79,11 @@ Deno.serve(async req => {
       p_per_day: 20,
       p_global_per_day: 500
     });
-    if (quota.error) return json({ code: 'QUOTA_ERROR' }, 500, undefined, req);
-    if (!quota.data?.allowed) return json({ code: 'RATE_LIMITED', reason: quota.data?.reason || 'quota' }, 429, undefined, req);
+    if (quota.error) return json({ code: 'QUOTA_ERROR' }, 500, req);
+    if (!quota.data?.allowed) return json({ code: 'RATE_LIMITED', reason: quota.data?.reason || 'quota' }, 429, req);
 
     const existing = await db.from('prospects').select('company_name,domain').eq('user_id', userData.user.id).limit(500);
-    if (existing.error) return json({ code: 'DATABASE_ERROR' }, 500, undefined, req);
+    if (existing.error) return json({ code: 'DATABASE_ERROR' }, 500, req);
 
     const existingDomains = new Set((existing.data || []).map((p: any) => clean(p.domain, 500).toLowerCase()).filter(Boolean));
     const existingNames = new Set((existing.data || []).map((p: any) => clean(p.company_name, 200).toLowerCase()).filter(Boolean));
@@ -174,13 +174,13 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
     if (!response.ok) {
       const detail = await response.text();
       console.error('Gemini prospecting error', response.status, detail.slice(0, 1000));
-      return json({ code: 'SEARCH_PROVIDER_ERROR' }, 502, undefined, req);
+      return json({ code: 'SEARCH_PROVIDER_ERROR' }, 502, req);
     }
 
     const payload = await response.json();
     if (payload?.status && payload.status !== 'completed') {
       console.error('Gemini prospecting incomplete', payload.status, payload?.error || '');
-      return json({ code: 'SEARCH_INCOMPLETE', provider_status: clean(payload.status, 50) }, 502, undefined, req);
+      return json({ code: 'SEARCH_INCOMPLETE', provider_status: clean(payload.status, 50) }, 502, req);
     }
 
     const outputs = Array.isArray(payload?.steps)
@@ -191,7 +191,7 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
     const outputText = textBlock?.text || (typeof payload?.output_text === 'string' ? payload.output_text : '');
     if (!outputText) {
       console.error('Gemini prospecting returned no model output', JSON.stringify(payload).slice(0, 3000));
-      return json({ code: 'EMPTY_SEARCH_RESULT' }, 502, undefined, req);
+      return json({ code: 'EMPTY_SEARCH_RESULT' }, 502, req);
     }
 
     const parsed = parseModelJson(outputText);
@@ -221,9 +221,9 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
       .filter((p: any) => !existingNames.has(p.company_name.toLowerCase()) && (!p.domain || !existingDomains.has(p.domain)));
 
     const annotationSources = sourceAnnotations.filter((s: any, i: number, arr: any[]) => arr.findIndex(x => x.url === s.url) === i);
-    return json({ prospects, sources: annotationSources }, undefined, req);
+    return json({ prospects, sources: annotationSources }, 200, req);
   } catch (error) {
     console.error('Prospecting function error', error);
-    return json({ code: 'FUNCTION_ERROR', detail: clean(error instanceof Error ? error.message : error, 500) }, 500, undefined, req);
+    return json({ code: 'FUNCTION_ERROR', detail: clean(error instanceof Error ? error.message : error, 500) }, 500, req);
   }
 });
