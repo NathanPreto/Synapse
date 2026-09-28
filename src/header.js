@@ -5,6 +5,7 @@ function WorkspaceHeader({ tab, setTab, theme, toggleTheme, user, onLogout, onSe
     painel: 'Seu dia, em movimento.',
     mental: 'Clareza para seguir em frente.',
     clientes: 'Clientes e oportunidades.',
+    prospeccao: 'Encontre e analise novos potenciais clientes.',
     lembretes: 'Nada importante passa despercebido.',
     foco: 'Foco no que move o dia.'
   };
