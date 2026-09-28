@@ -7,6 +7,8 @@ const {
   loadSynapseData,
   askAI: backendAskAI,
   deleteAccount: backendDeleteAccount,
+  loadProspecting: backendLoadProspecting,
+  createProspectingRun: backendCreateProspectingRun,
   deleteWellbeingData: backendDeleteWellbeing
 } = window.SynapseBackend || {};
 const persistence = window.SynapsePersistence || {};
