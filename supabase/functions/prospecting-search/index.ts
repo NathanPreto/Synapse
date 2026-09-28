@@ -104,7 +104,7 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
       method: 'POST',
       headers: { 'x-goog-api-key': geminiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.8-flash',
+        model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-2.5-flash',
         input: prompt,
         tools: [{ type: 'google_search' }],
         response_format: {
