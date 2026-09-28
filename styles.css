@@ -839,3 +839,39 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 @media (max-width: 860px) {
   .synapse-shell[data-theme="light"] .synapse-sidebar { background: rgba(255,255,255,.84) !important; }
 }
+
+
+/* ---------- Prospecção ---------- */
+.prospecting-ui{width:100%;max-width:1400px;margin:0 auto;display:grid;gap:18px}
+.prospecting-hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:22px;border:1px solid var(--border);border-radius:20px;background:var(--surface)}
+.prospecting-hero h2{margin:5px 0 7px;font-size:clamp(20px,2.5vw,28px);letter-spacing:-.03em}
+.prospecting-hero p{margin:0;color:var(--muted);max-width:720px;line-height:1.55}
+.prospecting-note{min-width:220px;max-width:300px;display:grid;gap:5px;padding:13px 14px;border:1px solid color-mix(in srgb,var(--ember) 25%,var(--border));border-radius:14px;background:color-mix(in srgb,var(--ember) 6%,var(--surface))}
+.prospecting-note b{font-size:12px;color:var(--teal)} .prospecting-note span{font-size:12px;line-height:1.45;color:var(--muted)}
+.prospecting-grid{display:grid;grid-template-columns:minmax(320px,.75fr) minmax(0,1.25fr);gap:18px;align-items:start}
+.prospecting-card{padding:20px;border:1px solid var(--border);border-radius:20px;background:var(--surface);min-width:0}
+.prospecting-card-title{font-weight:750;font-size:15px;margin-bottom:16px}
+.prospecting-card label{display:grid;gap:7px;margin-bottom:14px;font-size:12px;color:var(--muted)}
+.prospecting-card input,.prospecting-card textarea{width:100%;box-sizing:border-box}
+.prospecting-field{display:grid;gap:8px;margin-bottom:14px}.prospecting-label{font-size:12px;color:var(--muted)}
+.prospecting-chips{display:flex;flex-wrap:wrap;gap:7px}
+.prospecting-chip{border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:999px;padding:8px 10px;font-size:12px;cursor:pointer}
+.prospecting-chip.active{background:color-mix(in srgb,var(--ember) 13%,var(--surface));border-color:var(--ember);color:var(--text)}
+.prospecting-primary{width:100%;min-height:44px;border:0;border-radius:12px;background:var(--ember);color:var(--on-accent);font-weight:750;cursor:pointer}
+.prospecting-primary:disabled{opacity:.55;cursor:wait}
+.prospecting-secondary{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:10px;padding:8px 11px;cursor:pointer}
+.prospecting-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.prospecting-muted{font-size:12px;color:var(--muted2)}
+.prospecting-results{display:grid;gap:10px}
+.prospecting-empty{min-height:190px;display:grid;place-content:center;text-align:center;gap:7px;color:var(--muted);padding:24px;border:1px dashed var(--border);border-radius:15px}
+.prospect-card{padding:15px;border:1px solid var(--border);border-radius:16px;background:var(--surface2)}
+.prospect-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.prospect-card h3{margin:0 0 4px;font-size:15px}.prospect-card-top span{font-size:11px;color:var(--muted2)}
+.prospect-card p{font-size:13px;line-height:1.5;color:var(--muted);margin:12px 0 0}
+.prospect-potential{text-transform:capitalize;border-radius:999px;padding:5px 8px;white-space:nowrap;background:var(--surface);border:1px solid var(--border)}
+.prospect-potential.high{color:var(--teal);border-color:var(--ember)}.prospect-potential.medium{color:var(--gold)}.prospect-potential.low{color:var(--muted)}.prospect-potential.unknown{color:var(--muted2)}
+.prospect-actions{display:flex;gap:8px;margin-top:12px}.prospect-actions a,.prospect-actions button{font-size:12px;padding:7px 9px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);text-decoration:none;cursor:pointer}
+.prospecting-history{padding:20px;border:1px solid var(--border);border-radius:20px;background:var(--surface)}
+.prospecting-history-list{display:grid;gap:8px}.prospecting-history-row{display:flex;justify-content:space-between;gap:14px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);font-size:12px}.prospecting-history-row div{display:grid;gap:3px}.prospecting-history-row span{color:var(--muted2)}
+@media(max-width:900px){.prospecting-grid{grid-template-columns:1fr}.prospecting-hero{flex-direction:column}.prospecting-note{max-width:none;width:100%;box-sizing:border-box}}
+@media(max-width:560px){.prospecting-card{padding:16px}.prospect-card-top,.prospecting-card-head{flex-direction:column}.prospect-actions{flex-wrap:wrap}.prospecting-chip{padding:9px 10px}}
