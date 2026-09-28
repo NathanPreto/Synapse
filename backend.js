@@ -15,6 +15,8 @@
     saveProfile: provider?.saveProfile,
     deleteWellbeingData: provider?.deleteWellbeingData,
     askAI: provider?.askAI,
-    deleteAccount: provider?.deleteAccount
+    deleteAccount: provider?.deleteAccount,
+    loadProspecting: provider?.loadProspecting,
+    createProspectingRun: provider?.createProspectingRun
   };
 })();
