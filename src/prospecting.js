@@ -75,7 +75,7 @@ function Prospecting({ userId }) {
         setNotice(`${result?.prospects?.length || 0} empresas encontradas e salvas para análise.`);
       } catch (searchError) {
         window.SynapseLogger?.warn('Falha na descoberta de empresas.', searchError);
-        setError('A pesquisa foi salva, mas a descoberta de empresas não pôde ser concluída agora.');
+        setError(searchError?.message || 'A pesquisa foi salva, mas a descoberta de empresas não pôde ser concluída agora.');
       } finally {
         setSearching(false);
       }
