@@ -1,14 +1,28 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const CORS = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGINS')?.split(',')[0]?.trim() || '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json'
-};
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '')
+  .split(',')
+  .map(value => value.trim())
+  .filter(Boolean);
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowOrigin = !ALLOWED_ORIGINS.length
+    ? '*'
+    : (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin'
+  };
+}
 const noSession = { persistSession: false, autoRefreshToken: false };
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: CORS });
+const json = (body: unknown, status = 200, req?: Request) => new Response(JSON.stringify(body), {
+  status,
+  headers: { ...corsHeaders(req || new Request('https://localhost')), 'Content-Type': 'application/json' }
+});
 
 function client(token: string) {
   return createClient(
@@ -31,17 +45,17 @@ function parseModelJson(text: string) {
 }
 
 Deno.serve(async req => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  if (req.method !== 'POST') return json({ code: 'METHOD_NOT_ALLOWED' }, 405);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
+  if (req.method !== 'POST') return json({ code: 'METHOD_NOT_ALLOWED' }, 405, undefined, req);
 
   try {
     const auth = req.headers.get('Authorization') || '';
     const token = auth.replace(/^Bearer\s+/i, '').trim();
-    if (!token) return json({ code: 'UNAUTHORIZED' }, 401);
+    if (!token) return json({ code: 'UNAUTHORIZED' }, 401, undefined, req);
 
     const db = client(token);
     const { data: userData, error: userError } = await db.auth.getUser(token);
-    if (userError || !userData?.user?.id) return json({ code: 'UNAUTHORIZED' }, 401);
+    if (userError || !userData?.user?.id) return json({ code: 'UNAUTHORIZED' }, 401, undefined, req);
 
     const body = await req.json();
     const product = clean(body?.product || 'Soprador radial', 200);
@@ -56,7 +70,7 @@ Deno.serve(async req => {
 
     const serviceKey = Deno.env.get(['SUPABASE', 'SERVICE', 'ROLE', 'KEY'].join('_'));
     const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!serviceKey || !geminiKey) return json({ code: 'CONFIG_MISSING' }, 500);
+    if (!serviceKey || !geminiKey) return json({ code: 'CONFIG_MISSING' }, 500, undefined, req);
 
     const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey, { auth: noSession });
     const quota = await admin.rpc('consume_ai_quota', {
@@ -65,11 +79,11 @@ Deno.serve(async req => {
       p_per_day: 20,
       p_global_per_day: 500
     });
-    if (quota.error) return json({ code: 'QUOTA_ERROR' }, 500);
-    if (!quota.data?.allowed) return json({ code: 'RATE_LIMITED', reason: quota.data?.reason || 'quota' }, 429);
+    if (quota.error) return json({ code: 'QUOTA_ERROR' }, 500, undefined, req);
+    if (!quota.data?.allowed) return json({ code: 'RATE_LIMITED', reason: quota.data?.reason || 'quota' }, 429, undefined, req);
 
     const existing = await db.from('prospects').select('company_name,domain').eq('user_id', userData.user.id).limit(500);
-    if (existing.error) return json({ code: 'DATABASE_ERROR' }, 500);
+    if (existing.error) return json({ code: 'DATABASE_ERROR' }, 500, undefined, req);
 
     const existingDomains = new Set((existing.data || []).map((p: any) => clean(p.domain, 500).toLowerCase()).filter(Boolean));
     const existingNames = new Set((existing.data || []).map((p: any) => clean(p.company_name, 200).toLowerCase()).filter(Boolean));
@@ -160,13 +174,13 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
     if (!response.ok) {
       const detail = await response.text();
       console.error('Gemini prospecting error', response.status, detail.slice(0, 1000));
-      return json({ code: 'SEARCH_PROVIDER_ERROR' }, 502);
+      return json({ code: 'SEARCH_PROVIDER_ERROR' }, 502, undefined, req);
     }
 
     const payload = await response.json();
     if (payload?.status && payload.status !== 'completed') {
       console.error('Gemini prospecting incomplete', payload.status, payload?.error || '');
-      return json({ code: 'SEARCH_INCOMPLETE', provider_status: clean(payload.status, 50) }, 502);
+      return json({ code: 'SEARCH_INCOMPLETE', provider_status: clean(payload.status, 50) }, 502, undefined, req);
     }
 
     const outputs = Array.isArray(payload?.steps)
@@ -177,7 +191,7 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
     const outputText = textBlock?.text || (typeof payload?.output_text === 'string' ? payload.output_text : '');
     if (!outputText) {
       console.error('Gemini prospecting returned no model output', JSON.stringify(payload).slice(0, 3000));
-      return json({ code: 'EMPTY_SEARCH_RESULT' }, 502);
+      return json({ code: 'EMPTY_SEARCH_RESULT' }, 502, undefined, req);
     }
 
     const parsed = parseModelJson(outputText);
@@ -207,9 +221,9 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
       .filter((p: any) => !existingNames.has(p.company_name.toLowerCase()) && (!p.domain || !existingDomains.has(p.domain)));
 
     const annotationSources = sourceAnnotations.filter((s: any, i: number, arr: any[]) => arr.findIndex(x => x.url === s.url) === i);
-    return json({ prospects, sources: annotationSources });
+    return json({ prospects, sources: annotationSources }, undefined, req);
   } catch (error) {
     console.error('Prospecting function error', error);
-    return json({ code: 'FUNCTION_ERROR', detail: clean(error instanceof Error ? error.message : error, 500) }, 500);
+    return json({ code: 'FUNCTION_ERROR', detail: clean(error instanceof Error ? error.message : error, 500) }, 500, undefined, req);
   }
 });
