@@ -83,7 +83,7 @@ Termos auxiliares: ${keywords.join(', ') || 'nenhum'}.
 Procure empresas, não fornecedores de sopradores. Priorize fabricantes/indústrias que tenham processos em que sopradores radiais possam ser usados. Para cada empresa, procure o site oficial e evidências públicas do processo industrial. Não invente empresas, sites, e-mails, cargos ou fatos.
 
 Retorne SOMENTE JSON neste formato:
-{"prospects":[{"company_name":"","domain":"","website":"","industry":"","description":"","city":"","state":"","potential":"high|medium|low|unknown","potential_reason":"","evidence":[{"url":"","source_name":"","evidence":""}],"unknowns":[]}]}
+{"prospects":[{"company_name":"","domain":"","website":"","industry":"","description":"","city":"","state":"","potential":"high|medium|low|unknown","potential_reason":"","evidence":[{"url":"","source_name":"","evidence":""}],"contacts":[{"name":"","email":"","phone":"","job_title":"","department":"","email_status":"public|not_found","email_confidence":"high|medium|low|unknown","source":"","source_url":"","is_primary":true}],"suggested_subject":"","suggested_body":"","unknowns":[]}]}
 
 Critérios:
 - company_name é obrigatório.
@@ -91,7 +91,7 @@ Critérios:
 - potential deve refletir evidência encontrada, não certeza de compra.
 - evidence deve conter URLs públicas que sustentem a indicação.
 - unknowns registra o que não pôde ser confirmado.
-- não inclua empresas da lista de existentes abaixo.
+- para contatos, use somente e-mails comerciais publicamente publicados; não invente e-mails. Priorize geral/comercial/vendas ou cargos de compras/engenharia quando publicamente identificados.\n- gere suggested_subject e suggested_body em português, curtos, específicos para a empresa e baseados nas evidências; não diga que já é cliente.\n- não inclua empresas da lista de existentes abaixo.
 Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') || 'nenhuma'}.`;
 
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
@@ -136,7 +136,7 @@ Empresas já cadastradas: ${Array.from(existingNames).slice(0, 100).join(' | ') 
         potential_reason: clean(p.potential_reason, 10000),
         analysis_status: 'analyzed',
         analysis: { provider: 'gemini_google_search', model: Deno.env.get('PROSPECTING_GEMINI_MODEL') || 'gemini-3.5-flash-lite' },
-        evidence: Array.isArray(p.evidence) ? p.evidence.slice(0, 8).map((e: any) => ({ url: clean(e?.url, 1000), source_name: clean(e?.source_name, 200), evidence: clean(e?.evidence, 5000) })) : [],
+        contacts: Array.isArray(p.contacts) ? p.contacts.slice(0, 5).map((e: any) => ({ name: clean(e?.name, 200), email: clean(e?.email, 300), phone: clean(e?.phone, 100), job_title: clean(e?.job_title, 200), department: clean(e?.department, 120), email_status: ['public','not_found'].includes(e?.email_status) ? e.email_status : 'unknown', email_confidence: ['high','medium','low','unknown'].includes(e?.email_confidence) ? e.email_confidence : 'unknown', source: clean(e?.source, 200), source_url: clean(e?.source_url, 1000), is_primary: !!e?.is_primary })) : [], suggested_subject: clean(p.suggested_subject, 300), suggested_body: clean(p.suggested_body, 5000), evidence: Array.isArray(p.evidence) ? p.evidence.slice(0, 8).map((e: any) => ({ url: clean(e?.url, 1000), source_name: clean(e?.source_name, 200), evidence: clean(e?.evidence, 5000) })) : [],
         unknowns: Array.isArray(p.unknowns) ? p.unknowns.map((v: unknown) => clean(v, 500)).slice(0, 12) : []
       }))
       .filter((p: any) => p.company_name)
