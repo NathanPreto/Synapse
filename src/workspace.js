@@ -1258,6 +1258,7 @@ function SynapseWorkspace({ user, onLogout, account }) {
               pinnedPhrase,
               setPinnedPhrase
             }),
+          tab === 'prospeccao' && React.createElement(Prospecting, { userId: user.id }),
           tab === 'clientes' &&
             React.createElement(Clientes, {
               clients,
