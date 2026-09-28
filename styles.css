@@ -888,3 +888,12 @@ body{background:var(--synapse-paper);font-family:"DM Sans",sans-serif}
 .prospecting-ui button:hover,.prospecting-ui a:hover{transform:none;filter:none}
 @media(max-width:900px){.prospecting-grid{grid-template-columns:1fr}.prospecting-hero{grid-template-columns:1fr}.prospecting-note{width:auto}}
 @media(max-width:560px){.prospecting-card,.prospecting-history{padding:15px}.prospect-card-top,.prospecting-card-head{flex-direction:column}.prospect-actions{flex-wrap:wrap}.prospecting-chip{padding:8px 9px}}
+
+.prospect-contact-preview{display:grid;gap:5px;margin-top:10px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.prospect-contact-preview div{display:flex;justify-content:space-between;gap:10px;font-size:11px}
+.prospect-contact-preview b{font-weight:650;color:var(--text)}.prospect-contact-preview span{color:var(--teal);word-break:break-all}
+.prospect-message{margin-top:9px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.prospect-message summary{cursor:pointer;padding:9px 10px;font-size:11px;font-weight:650;color:var(--text)}
+.prospect-message>div{padding:0 10px 10px}.prospect-message b{display:block;font-size:11px;margin-bottom:5px}.prospect-message p{margin:0!important;white-space:pre-wrap;font-size:11px;line-height:1.5}
+.prospect-sources{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.prospect-sources a{font-size:10px;color:var(--muted);text-decoration:none;padding:5px 7px;border:1px solid var(--border);border-radius:7px;background:var(--surface)}
+.prospect-sources a:hover{transform:none;box-shadow:none;color:var(--text)}
