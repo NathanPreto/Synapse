@@ -386,3 +386,47 @@ alter table public.clients
   add constraint clients_deal_value_range
   check (deal_value >= 0 and deal_value <= 999999999999.99) not valid;
 alter table public.clients validate constraint clients_deal_value_range;
+
+
+-- ===== 20260929000000_prospecting_daily_limit.sql =====
+-- Limite rígido de 10 prospects úteis por usuário, por dia (horário de São Paulo).
+-- O limite é aplicado no banco para impedir excesso mesmo em chamadas simultâneas.
+
+create schema if not exists private;
+
+create or replace function private.enforce_daily_prospect_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_count integer;
+begin
+  perform pg_advisory_xact_lock(
+    hashtextextended('synapse-prospecting:' || new.user_id::text, 0)
+  );
+
+  select count(*)::integer
+    into v_count
+  from public.prospects
+  where user_id = new.user_id
+    and created_at >= date_trunc('day', now(), 'America/Sao_Paulo')
+    and created_at < date_trunc('day', now(), 'America/Sao_Paulo') + interval '1 day';
+
+  if v_count >= 10 then
+    raise exception 'DAILY_PROSPECT_LIMIT_REACHED'
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function private.enforce_daily_prospect_limit() from public, anon, authenticated;
+
+drop trigger if exists prospects_daily_limit on public.prospects;
+create trigger prospects_daily_limit
+before insert on public.prospects
+for each row
+execute function private.enforce_daily_prospect_limit();
