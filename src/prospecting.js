@@ -134,7 +134,7 @@ function Prospecting({ userId }) {
           'div',
           { className: 'prospecting-field' },
           React.createElement('span', { className: 'prospecting-label' }, 'Segmentos'),
-          React.createElement('select', { className: 'prospecting-select prospecting-segment-select', value: segments[0] || '', onChange: e => setSegments(e.target.value ? [e.target.value] : []) }, React.createElement('option', { value: '' }, 'Todos os segmentos'), ...PROSPECT_SEGMENTS.map(segment => React.createElement('option', { key: segment, value: segment }, segment))))
+          React.createElement('select', { className: 'prospecting-select prospecting-segment-select', value: segments[0] || '', onChange: e => setSegments(e.target.value ? [e.target.value] : []) }, React.createElement('option', { value: '' }, 'Todos os segmentos'), ...PROSPECT_SEGMENTS.map(segment => React.createElement('option', { key: segment, value: segment }, segment)))
         ),
         React.createElement(
           'label',
