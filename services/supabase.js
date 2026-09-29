@@ -188,7 +188,7 @@
         region: clean(input?.region).slice(0, 200) || 'Brasil',
         segments: Array.isArray(input?.segments) ? input.segments : [],
         keywords: Array.isArray(input?.keywords) ? input.keywords : [],
-        limit: Math.max(1, Math.min(20, Number(input?.limit) || 10))
+        limit: Math.max(1, Math.min(10, Number(input?.limit) || 10))
       },
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -198,10 +198,11 @@
         const payload = await error.context?.json?.();
         code = String(payload?.code || '').toUpperCase();
       } catch (_) {}
-      if (code === 'RATE_LIMITED') throw new Error('A busca atingiu o limite de uso. Aguarde alguns instantes e tente novamente.');
+      if (code === 'DAILY_PROSPECT_LIMIT') throw new Error('Você já atingiu o limite de 10 prospects úteis hoje. Novas prospecções ficam disponíveis amanhã.');
+      if (code === 'RATE_LIMITED') throw new Error('A busca atingiu o limite gratuito de uso por agora. Aguarde e tente novamente.');
       if (code === 'CONFIG_MISSING') throw new Error('A busca de prospecção ainda não está configurada no servidor.');
       if (code === 'SEARCH_PROVIDER_ERROR') throw new Error('O provedor de pesquisa não respondeu. Tente novamente em alguns instantes.');
-      if (code === 'SEARCH_QUOTA_EXCEEDED') throw new Error('A pesquisa atingiu a cota do provedor. O Synapse mudou para uma rota de pesquisa mais econômica; tente novamente em alguns instantes.');
+      if (code === 'SEARCH_QUOTA_EXCEEDED') throw new Error('O limite gratuito de pesquisa foi atingido. O Synapse não usa uma rota paga; tente novamente quando a cota gratuita for renovada.');
       if (code === 'SEARCH_INCOMPLETE') throw new Error('A pesquisa externa não terminou a tempo. Tente novamente.');
       if (code === 'EMPTY_SEARCH_RESULT') throw new Error('A pesquisa externa não retornou resultados utilizáveis.');
       if (code === 'DATABASE_ERROR') throw new Error('A busca encontrou um problema ao acessar os dados da prospecção.');
@@ -281,7 +282,7 @@
       region: clean(input?.region).slice(0, 200),
       segments,
       keywords,
-      requested_limit: Math.max(1, Math.min(100, Number(input?.requestedLimit) || 20)),
+      requested_limit: Math.max(1, Math.min(10, Number(input?.requestedLimit) || 10)),
       status: 'draft'
     };
     const { data, error } = await api.from('prospecting_runs').insert(payload).select('*').single();
