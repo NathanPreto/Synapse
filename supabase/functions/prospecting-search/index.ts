@@ -66,15 +66,6 @@ Deno.serve(async req => {
 
     const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey, { auth: noSession });
 
-    const quota = await admin.rpc('consume_ai_quota', {
-      p_user: userData.user.id,
-      p_per_minute: 1,
-      p_per_day: 20,
-      p_global_per_day: 100
-    });
-    if (quota.error) return json({ code: 'QUOTA_ERROR' }, 500, req);
-    if (!quota.data?.allowed) return json({ code: 'RATE_LIMITED', reason: quota.data?.reason || 'quota' }, 429, req);
-
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const dailyCount = await db
@@ -94,6 +85,15 @@ Deno.serve(async req => {
         daily_remaining: 0
       }, 429, req);
     }
+
+    const quota = await admin.rpc('consume_ai_quota', {
+      p_user: userData.user.id,
+      p_per_minute: 1,
+      p_per_day: 20,
+      p_global_per_day: 100
+    });
+    if (quota.error) return json({ code: 'QUOTA_ERROR' }, 500, req);
+    if (!quota.data?.allowed) return json({ code: 'RATE_LIMITED', reason: quota.data?.reason || 'quota' }, 429, req);
 
     const existing = await db.from('prospects').select('company_name,domain').eq('user_id', userData.user.id).limit(500);
     if (existing.error) return json({ code: 'DATABASE_ERROR' }, 500, req);
