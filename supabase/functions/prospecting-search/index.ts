@@ -58,13 +58,14 @@ Deno.serve(async req => {
     const keywords = Array.isArray(body?.keywords)
       ? body.keywords.map((v: unknown) => clean(v, 100)).filter(Boolean).slice(0, 12)
       : [];
-    const limit = Math.max(1, Math.min(20, Number(body?.limit) || 10));
+    const limit = Math.max(1, Math.min(10, Number(body?.limit) || 10));
 
     const serviceKey = Deno.env.get(['SUPABASE', 'SERVICE', 'ROLE', 'KEY'].join('_'));
     const geminiKey = Deno.env.get('GEMINI_API_KEY');
     if (!serviceKey || !geminiKey) return json({ code: 'CONFIG_MISSING' }, 500, req);
 
     const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey, { auth: noSession });
+
     const quota = await admin.rpc('consume_ai_quota', {
       p_user: userData.user.id,
       p_per_minute: 1,
