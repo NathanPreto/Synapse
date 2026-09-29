@@ -20,7 +20,7 @@ function Prospecting({ userId }) {
   const [notice, setNotice] = React.useState('');
   const [product, setProduct] = React.useState('Soprador radial');
   const [region, setRegion] = React.useState('');
-  const [segments, setSegments] = React.useState(['Plásticos', 'Alimentos', 'Química', 'Papel e celulose', 'Tratamento de água']);
+  const [segments, setSegments] = React.useState([]);
   const [keywords, setKeywords] = React.useState('transporte pneumático, exaustão, secagem industrial, movimentação de ar');
   const [limit, setLimit] = React.useState(10);
 
