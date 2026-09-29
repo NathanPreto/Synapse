@@ -231,7 +231,12 @@
       status: 'new'
     }));
     const inserted = await api.from('prospects').insert(rows).select('*');
-    if (inserted.error) throw inserted.error;
+    if (inserted.error) {
+      if (String(inserted.error.message || '').includes('DAILY_PROSPECT_LIMIT_REACHED')) {
+        throw new Error('Você já atingiu o limite de 10 prospects úteis hoje. Novas prospecções ficam disponíveis amanhã.');
+      }
+      throw inserted.error;
+    }
 
     const byName = new Map((inserted.data || []).map(row => [row.company_name, row]));
     const contactRows = [];
