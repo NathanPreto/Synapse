@@ -66,8 +66,9 @@ Deno.serve(async req => {
 
     const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceKey, { auth: noSession });
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const brazilParts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const brazilDate = Object.fromEntries(brazilParts.map(part => [part.type, part.value]));
+    const startOfDay = new Date(brazilDate.year + '-' + brazilDate.month + '-' + brazilDate.day + 'T00:00:00-03:00');
     const dailyCount = await db
       .from('prospects')
       .select('id', { count: 'exact', head: true })
