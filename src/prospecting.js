@@ -22,7 +22,7 @@ function Prospecting({ userId }) {
   const [region, setRegion] = React.useState('');
   const [segments, setSegments] = React.useState(['Plásticos', 'Alimentos', 'Química', 'Papel e celulose', 'Tratamento de água']);
   const [keywords, setKeywords] = React.useState('transporte pneumático, exaustão, secagem industrial, movimentação de ar');
-  const [limit, setLimit] = React.useState(20);
+  const [limit, setLimit] = React.useState(10);
 
   const load = React.useCallback(async () => {
     if (!userId || typeof backendLoadProspecting !== 'function') return;
@@ -56,7 +56,7 @@ function Prospecting({ userId }) {
         region: region.trim(),
         segments,
         keywords: keywords.split(',').map(v => v.trim()).filter(Boolean).slice(0, 20),
-        requestedLimit: Math.max(1, Math.min(100, Number(limit) || 20))
+        requestedLimit: Math.max(1, Math.min(10, Number(limit) || 10))
       });
       setRuns(prev => [run, ...prev]);
       setSearching(true);
@@ -66,7 +66,7 @@ function Prospecting({ userId }) {
           region: region.trim() || 'Brasil',
           segments,
           keywords: keywords.split(',').map(v => v.trim()).filter(Boolean).slice(0, 20),
-          limit: Math.max(1, Math.min(20, Number(limit) || 10)),
+          limit: Math.max(1, Math.min(10, Number(limit) || 10)),
           runId: run.id
         });
         setProspects(prev => [...(result?.prospects || []), ...prev]);
@@ -100,7 +100,7 @@ function Prospecting({ userId }) {
         null,
         React.createElement('div', { className: 'workspace-eyebrow' }, 'PROSPECÇÃO'),
         React.createElement('h2', null, 'Encontre empresas com potencial comercial.'),
-        React.createElement('p', null, 'O Synapse pesquisa, organiza e analisa. Você decide quem merece entrar no CRM e como abordar.')
+        React.createElement('p', null, 'O Synapse pesquisa, organiza e analisa. Você decide quem merece entrar no CRM e como abordar. Limite: 10 prospects úteis por dia.')
       ),
       React.createElement(
         'div',
@@ -145,8 +145,8 @@ function Prospecting({ userId }) {
         React.createElement(
           'label',
           null,
-          'Quantidade desejada',
-          React.createElement('input', { type: 'number', min: 1, max: 100, value: limit, onChange: e => setLimit(e.target.value) })
+          'Quantidade desejada (máx. 10/dia)',
+          React.createElement('input', { type: 'number', min: 1, max: 10, value: limit, onChange: e => setLimit(Math.min(10, Math.max(1, Number(e.target.value) || 1))) })
         ),
         React.createElement(
           'button',
